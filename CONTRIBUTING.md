@@ -1,4 +1,4 @@
-# Contributing to the Heart Failure Classification project
+# Contributing to the Vancouver Crime Watch project
 
 This file outlines how to propose changes to the Heart Failure Classification project. 
 
