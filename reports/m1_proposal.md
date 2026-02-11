@@ -1,6 +1,12 @@
 # Proposal - Vancouver Crime Watch
 
 ## Section 1: Motivation and Purpose
+
+- **Our Role**: Data Science Consultants
+- **Target Audience**: In person and public rentals
+
+
+
 Briefly explain the "Why":
 
 Target Audience: Who are they and what role are you embodying?
