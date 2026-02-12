@@ -2,10 +2,10 @@ from shiny import App, ui
 
 app_ui = ui.page_sidebar(
     ui.sidebar(
-        ui.input_select("neighbourhood", "Neighbourhood",
-            ["All", "Milestone 1", "Milestone 2"]),
+        ui.input_select("nb", "Neighbourhood",
+            ["All", "West End", "Sunset", "Strathcona", "Musqueam", "Stanley Park"]),
         ui.input_select("crime_type", "Crime Type",
-            ["All Crime Types", "Team 01", "Team 02"]),
+            ["All Crime Types", "Break and Enter Commercial", "Homicide", "Theft of Bicycle", "Mischief"]),
         ui.input_select("month", "Month",
             ["All", "January", "February", "March", "April", "May", "June", "July", "August",
             "September", "October", "November", "Decemeber"]),
