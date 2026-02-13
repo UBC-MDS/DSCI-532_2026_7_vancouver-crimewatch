@@ -1,11 +1,16 @@
 # Proposal - Vancouver Crime Watch
 
 ## Section 1: Motivation and Purpose
-Briefly explain the "Why":
 
-Target Audience: Who are they and what role are you embodying?
-Problem: What challenge are they facing?
-Solution: How will your dashboard help them solve it?
+- **Our Role**: Data Science Consultants
+- **Target Audience**: Newcomers to Vancouver (students, families, immigrants, and professionals relocating to the city)
+
+Moving to a new city can be overwhelming, especially when individuals are unfamiliar with neighborhood characteristics and overall safety conditions. For newcomers to Vancouver, choosing where to live is one of the most important early decisions they make. However, without local knowledge, it can be difficult to assess which areas align with their safety expectations and comfort levels.
+Finding reliable, easy-to-understand safety information is often challenging, as data may be technical, or not presented in a way that supports practical decision-making. This uncertainty can lead to stress, uninformed housing choices, or dissatisfaction after moving in.
+
+To address this challenge, we propose the **Vancouver Safety Dashboard (VSD)**, an interactive data visualization application designed to provide clear and accessible insights into neighborhood safety trends across Vancouver. The dashboard will allow users to explore safety-related indicators by area, compare neighborhoods, and filter data by categories such as incident type or time period.
+
+By transforming complex public safety data into intuitive visual insights, our app empowers newcomers to make informed housing decisions, feel more confident in their relocation process, and select neighborhoods that best align with their personal safety preferences and lifestyle needs.
 
 ## Section 2: Description of the Data
  
