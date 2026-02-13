@@ -3,13 +3,14 @@
 ## Section 1: Motivation and Purpose
 
 - **Our Role**: Data Science Consultants
-- **Target Audience**: Prospective renters and housing occupants in Vancouver
+- **Target Audience**: Newcomers to Vancouver (students, families, immigrants, and professionals relocating to the city)
 
-With the cost of housing skyrocketing across different regions and neighborhoods in Vancouver, potential residents are in dire need of reliable ways to verify the safety levels and crime situations associated with areas they are considering before signing a lease or procuring that property. Renting is a major financial commitment, and choosing the wrong neighborhood could significantly affect both safety and quality of life.
+Moving to a new city can be overwhelming, especially when individuals are unfamiliar with neighborhood characteristics and overall safety conditions. For newcomers to Vancouver, choosing where to live is one of the most important early decisions they make. However, without local knowledge, it can be difficult to assess which areas align with their safety expectations and comfort levels.
+Finding reliable, easy-to-understand safety information is often challenging, as data may be technical, or not presented in a way that supports practical decision-making. This uncertainty can lead to stress, uninformed housing choices, or dissatisfaction after moving in.
 
-To help prospects make informed decisions, we are presenting **The Vancouver Crime Watch Dashboard Application (VCW App)**. **VCW App** will provide insights into the crime severity levels across neighborhoods, with granularity down to specific areas or blocks. Users will be able to explore crime patterns, filter by crime type or location, and compare different neighborhoods.
+To address this challenge, we propose the **Vancouver Safety Dashboard (VSD)**, an interactive data visualization application designed to provide clear and accessible insights into neighborhood safety trends across Vancouver. The dashboard will allow users to explore safety-related indicators by area, compare neighborhoods, and filter data by categories such as incident type or time period.
 
-By providing clear visual findings, our app empowers users to make informed rental decisions, assess safety risks, and take appropriate precautionary measures or avoid high-risk areas altogether.
+By transforming complex public safety data into intuitive visual insights, our app empowers newcomers to make informed housing decisions, feel more confident in their relocation process, and select neighborhoods that best align with their personal safety preferences and lifestyle needs.
 
 ## Section 2: Description of the Data
 Describe the dataset you finalized in Step 1.
