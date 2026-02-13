@@ -1,1 +1,14 @@
-# DSCI-532_2026_7_vancouver-crimewatch
+# DSCI-532_2026_7_vancouver-neighbourhood-safety
+
+The Vancouver Neighbourhood Safety dashboard was developed to provide an interactive overview of crime patterns across different neighbourhoods in Vancouver, Canada. The dashboard allows users to explore crime rates based on different breakdowns including neighbourhoods, crime types, and time patterns. Designed with home searchers in mind, it transforms crime data from the Vancouver Police Department (VPD) into clear visual comparisons, helping users better understand neighbourhood safety and make more informed housing decisions.
+
+
+## Data Attribution
+This project uses dataset provided by the City of Vancouver and the Vancouver Police Department.
+
+_Hence: **Contains information licensed under the Open Government License Vancouver**._
+
+
+**Sources**
+- [Vancouver Police Department GeoDASH Open Data Portal](https://geodash.vpd.ca/opendata/)
+- [Official License Page](https://opendata.vancouver.ca/pages/licence/)
