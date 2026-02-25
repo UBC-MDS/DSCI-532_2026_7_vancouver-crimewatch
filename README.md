@@ -2,6 +2,14 @@
 
 The Vancouver Neighbourhood Safety dashboard was developed to provide an interactive overview of crime patterns across different neighbourhoods in Vancouver, Canada. The dashboard allows users to explore crime rates based on different breakdowns including neighbourhoods, crime types, and time patterns. Designed with home searchers in mind, it transforms crime data from the Vancouver Police Department (VPD) into clear visual comparisons, helping users better understand neighbourhood safety and make more informed housing decisions.
 
+## Visualization
+
+Both the *development* and the *stable* versions of this dashboard can be accessed via the following links:
+
+[Stable version](https://019c9287-0994-4ff7-4350-227e28a7e29e.share.connect.posit.cloud/)
+
+[Development version](https://019c928e-e698-6cad-eba8-b45208bebd6f.share.connect.posit.cloud/)
+
 ## Installation
 
 To reproduce the environment, navigate to the root of the project dirctory and run:
