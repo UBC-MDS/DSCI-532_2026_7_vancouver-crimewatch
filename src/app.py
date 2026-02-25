@@ -66,7 +66,6 @@ app_ui = ui.page_sidebar(
     title=ui.tags.h2("Vancouver Neighbourhood Safety", style="font-weight: bold;"), fillable=True,
 )
 
-
 def server(input, output, session):
     @reactive.calc
     def filtered_data():
@@ -88,8 +87,5 @@ def server(input, output, session):
     @render.text
     def crime_count():
         return str(len(filtered_data()))
-
-
-
 
 app = App(app_ui, server=server)
