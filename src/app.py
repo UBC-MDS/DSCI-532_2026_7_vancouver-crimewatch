@@ -1,23 +1,8 @@
 from shiny import App, ui, reactive, render
 import pandas as pd
 
-crime_df = pd.read_csv("data/raw/crimedata_csv_AllNeighbourhoods_2025.csv")
-
-# This is a placeholder for data preprocessing steps. Should be moved to different script.
-crime_df["NEIGHBOURHOOD"] = crime_df["NEIGHBOURHOOD"].fillna("Not specified")
-crime_df["TYPE"] = crime_df["TYPE"].fillna("Not specified")
-crime_df["MONTH_NAME"] = pd.to_datetime(pd.to_numeric(crime_df["MONTH"], errors="coerce"), format="%m", errors="coerce").dt.month_name()
-
-def get_time_of_day(hour):
-    if 4 <= hour <= 11:
-        return "Morning"
-    elif 12 <= hour <= 17:
-        return "Afternoon"
-    else:
-        return "Evening"
-
-crime_df["TIME_OF_DAY"] = crime_df["HOUR"].apply(get_time_of_day)
-
+crime_df = pd.read_csv("data/processed/processed_vancouver_crime_data_2025.csv")
+population_df = pd.read_csv("data/raw/van_pop_2016.csv")
 
 # Input options for the dropdowns
 neighbourhoods = ["All"] + sorted(crime_df["NEIGHBOURHOOD"].unique())
