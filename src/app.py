@@ -1,7 +1,7 @@
 from shiny import App, ui, reactive, render
 import pandas as pd
 
-crime_df = pd.read_csv("data/processed/crimedata_csv_AllNeighbourhoods_2025.csv")
+crime_df = pd.read_csv("data/raw/crimedata_csv_AllNeighbourhoods_2025.csv")
 
 # This is a placeholder for data preprocessing steps. Should be moved to different script.
 crime_df["NEIGHBOURHOOD"] = crime_df["NEIGHBOURHOOD"].fillna("Not specified")
