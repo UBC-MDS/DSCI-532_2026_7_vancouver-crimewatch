@@ -1,4 +1,5 @@
 from shiny import App, ui, reactive, render
+from shinywidgets import render_plotly, output_widget
 import pandas as pd
 
 crime_df = pd.read_csv("data/processed/processed_vancouver_crime_data_2025.csv")
@@ -41,6 +42,7 @@ app_ui = ui.page_sidebar(
                 ),
             ui.card(
                 ui.card_header(ui.strong("Crime by Time of Day")), 
+                output_widget("time_of_day_plot"),
                 full_screen=True,
                 ),
             col_widths=[12,12],
