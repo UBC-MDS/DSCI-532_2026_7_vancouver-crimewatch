@@ -24,9 +24,9 @@ app_ui = ui.page_sidebar(
     ),
     ui.layout_columns(
         ui.value_box("Reported Incidents", ui.output_text("crime_count")),
-        ui.value_box("Crime Rate", "9%"),
-        ui.value_box("Average Comparison", "2%"),
-        ui.value_box("MoM Change", "4%"),
+        ui.value_box("Crime Rate", ui.output_text("crime_rate")),
+        ui.value_box("Average Comparison", ui.output_ui("average_comparison")),
+        ui.value_box("Neighbourhood Safety Rank", ui.output_text("neighbourhood_rank")),
         fill=False,
     ),
     ui.layout_columns(
@@ -69,8 +69,67 @@ def server(input, output, session):
             df = df[df["TIME_OF_DAY"] == daily_time]
         return df
     
+    @reactive.calc
+    def filtered_population():
+        nb = input.nb()
+        if nb == "All":
+            return population_df["POPULATION"].sum()
+        else:
+            pop = population_df[population_df["NEIGHBOURHOOD"] == nb]["POPULATION"]
+            return pop.iloc[0] if not pop.empty else 0
+        
+    @reactive.calc
+    def neighbourhood_ranking():
+        nb = input.nb()
+        crime_type = input.crime_type()
+        month = input.month()
+        daily_time = input.daily_time()
+        if nb == "All":
+            return None
+        df = crime_df.copy()
+        if crime_type != "All":
+            df = df[df["TYPE"] == crime_type]
+        if month != "All":
+            df = df[df["MONTH_NAME"] == month]
+        if daily_time != "All":
+            df = df[df["TIME_OF_DAY"] == daily_time]
+        crime_counts = df.groupby("NEIGHBOURHOOD").size()
+        rates = crime_counts / population_df.set_index("NEIGHBOURHOOD")["POPULATION"] * 100
+        ranked = rates.sort_values(ascending=True).reset_index()
+        if nb in ranked["NEIGHBOURHOOD"].values:
+            rank = ranked[ranked["NEIGHBOURHOOD"] == nb].index[0] + 1
+            total = len(ranked)
+            return f"{rank} / {total}"
+        return None
+    
     @render.text
     def crime_count():
         return str(len(filtered_data()))
+    
+    @render.text
+    def crime_rate():
+        count = len(filtered_data())
+        pop = filtered_population()
+        if pop == 0:
+            return "No population data"
+        rate = (count / pop * 100) if not pd.isna(pop) else 0
+        return f"{rate:.2f}%"
+    
+    @render.ui
+    def average_comparison():
+        nb = input.nb()
+        city_avg = len(crime_df) / population_df["POPULATION"].sum() * 100
+        if nb == "All":
+            return ui.span(ui.span(f"{city_avg:.2f}%", style="color: black"))
+        
+        neighbourhood_rate = int(len(filtered_data())) / filtered_population() * 100 if filtered_population() > 0 else 0
+        comparison_val = neighbourhood_rate - city_avg
+        color = "green" if comparison_val < 0 else "red"
+        return ui.span(f"{comparison_val:.2f}%", style=f"color: {color}")
+    
+    @render.text
+    def neighbourhood_rank():
+        rank = neighbourhood_ranking()
+        return rank if rank else "N/A"
 
 app = App(app_ui, server=server)
