@@ -1,5 +1,8 @@
 from shiny import App, ui, reactive, render
+from shinywidgets import render_plotly, output_widget
 import pandas as pd
+import altair as alt
+alt.data_transformers.disable_max_rows()
 import folium
 from folium.plugins import HeatMap
 import geopandas as gpd
@@ -78,8 +81,12 @@ app_ui = ui.page_sidebar(
                 full_screen=True,
                 ),
             ui.card(
-                ui.card_header(ui.strong("Crime by Time of Day")), 
+                ui.card_header(ui.strong("Crime Occurrences By Time of Day")), 
+                ui.card_body(output_widget("time_of_day_plot", width="100%", height="100%"),
+                fill=True,
+                ),
                 full_screen=True,
+                fill=True
                 ),
             col_widths=[12,12],
             fill=True
@@ -169,6 +176,58 @@ def server(input, output, session):
     def neighbourhood_rank():
         rank = neighbourhood_ranking()
         return rank if rank else "N/A"
+    
+    @reactive.calc
+    def data_for_time_of_day_plot():
+        nb = input.nb()
+        crime_type = input.crime_type()
+        month = input.month()
+        df = crime_df.copy()
+        if nb != "All":
+            df = df[df["NEIGHBOURHOOD"] == nb]
+        if crime_type != "All":
+            df = df[df["TYPE"] == crime_type]
+        if month != "All":
+            df = df[df["MONTH_NAME"] == month]
+        return df
+        
+    
+    @render_plotly
+    def time_of_day_plot():
+        df = data_for_time_of_day_plot()
+        
+        custom_color = ["#fb8500", "#023047", "#669bbc"]
+
+        base = alt.Chart(df).transform_aggregate(
+            count='count()',
+            groupby=['TIME_OF_DAY']
+        ).transform_joinaggregate(
+            total='sum(count)'
+        ).transform_calculate(
+            percent='datum.count / datum.total',
+            full_label='datum.TIME_OF_DAY + ": " + format(datum.percent, ".0%")'
+
+        ).encode(
+            theta=alt.Theta('count:Q', stack=True),
+            color=alt.Color('TIME_OF_DAY:N', scale=alt.Scale(range=custom_color), legend=None),
+            tooltip=[alt.Tooltip('TIME_OF_DAY:N', title='Time of Day'), alt.Tooltip('percent:Q', format='.1%', title='Percentage'), alt.Tooltip('count:Q', format=',', title='Count')]
+        )
+
+        slices = base.mark_arc(innerRadius=60, outerRadius=120)
+
+
+        text = base.mark_text(radius=160, size=12).encode(
+            text='full_label:N'
+        )
+
+        pie_chart = (slices + text).properties(
+            width=400,
+            height=300
+        ).configure_view(
+            stroke=None 
+        )
+
+        return pie_chart
 
     @reactive.calc
     def filtered_latlon():
