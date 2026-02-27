@@ -43,12 +43,18 @@ flowchart TD
     A[/input_nbhd/] --> F2[filetered_no_crime_type]
     C[/input_crime_month/] --> F2
     D[/input_crime_day/] --> F2
-    
-    F --> PLOT[PLOT]
-    F --> KPIS[KPIs]
-    F2 -->CHART[CHART]
 
-    PLOT --> P1([plot_map])
+    A[/input_nbhd/] --> F3[filetered_no_time_of_day]
+    B[/input_crime_type/] --> F3
+    C[/input_crime_month/] --> F3
+    
+    
+    F --> KPIS[KPIs]
+    F -->MAP[MAP]    
+    F2 -->CHART[CHART]
+    F3 -->PLOT[PLOT]
+
+    MAP --> P1([plot_map])
     CHART --> P2([plot_bar])
     PLOT --> P3([plot_pie])
     KPIS --> K1([kpi_rep_incidents])
