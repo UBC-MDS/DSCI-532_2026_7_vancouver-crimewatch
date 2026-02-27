@@ -14,7 +14,7 @@ population_df = pd.read_csv("data/raw/van_pop_2016.csv")
 
 # Load neighbourhood polygons
 neigh_gdf = gpd.read_file("data/processed/merged_vancity.gpkg",
-                          layer="merged_vancity")
+                        layer="merged_vancity")
 
 # Latitude and Longitude compatibility with Leaflet/Folium
 neigh_gdf = neigh_gdf.to_crs(epsg=4326)
@@ -43,9 +43,18 @@ def neigh_style_selected(_feature):
         "fillOpacity": 0.18, 
         "weight": 3
     }
+    
+header = ui.div(
+    ui.div(
+        ui.h1("🍁 Vancouver Neighbourhood Safety", class_="mb-0 fs-3"),
+    ),
+    class_="text-white p-4 mb-0 d-flex justify-content-between align-items-center",
+    style="background-color: #023047;"
+)
 
-
-app_ui = ui.page_sidebar(
+app_ui = ui.page_fillable( 
+    header,
+        ui.page_sidebar(
     ui.sidebar(
         ui.input_select("nb", "Neighbourhood",
             neighbourhoods),
@@ -96,8 +105,7 @@ app_ui = ui.page_sidebar(
         ),
         col_widths=[7, 5],
         ),
-    title=ui.tags.h2("Vancouver Neighbourhood Safety", style="font-weight: bold;"), fillable=True,
-)
+        )
 
 def server(input, output, session):
     @reactive.calc
