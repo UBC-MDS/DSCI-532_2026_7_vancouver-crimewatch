@@ -7,6 +7,7 @@ import folium
 from folium.plugins import HeatMap
 import geopandas as gpd
 from pyproj import Transformer
+import faicons as fa
 
 
 crime_df = pd.read_csv("data/processed/processed_vancouver_crime_data_2025.csv")
@@ -14,7 +15,7 @@ population_df = pd.read_csv("data/raw/van_pop_2016.csv")
 
 # Load neighbourhood polygons
 neigh_gdf = gpd.read_file("data/processed/merged_vancity.gpkg",
-                          layer="merged_vancity")
+                        layer="merged_vancity")
 
 # Latitude and Longitude compatibility with Leaflet/Folium
 neigh_gdf = neigh_gdf.to_crs(epsg=4326)
@@ -43,60 +44,88 @@ def neigh_style_selected(_feature):
         "fillOpacity": 0.18, 
         "weight": 3
     }
-
-
-app_ui = ui.page_sidebar(
-    ui.sidebar(
-        ui.input_select("nb", "Neighbourhood",
-            neighbourhoods),
-        ui.input_select("crime_type", "Crime Type",
-            crime_types),
-        ui.input_select("month", "Month",
-            months),
-        ui.input_select("daily_time", "Time of Day",
-            time_of_day),
-        full_screen=True
+    
+header = ui.div(
+    ui.div(
+        ui.h1("🍁 Vancouver Neighbourhood Safety", class_="mb-0 fs-3"),
     ),
+    class_="text-white p-4 mb-0 d-flex justify-content-between align-items-center",
+    style="background-color: #023047;"
+)
+
+app_ui = ui.page_fillable( 
+    header,
+    ui.layout_sidebar(
+        ui.sidebar(
+            ui.input_select("nb", "Neighbourhood",
+                neighbourhoods),
+            ui.input_select("crime_type", "Crime Type",
+                crime_types),
+            ui.input_select("month", "Month",
+                months),
+            ui.input_select("daily_time", "Time of Day",
+                time_of_day),
+            full_screen=True,
+            width=250,
+            bg="#f8f9fa",
+        ),
     ui.layout_columns(
-        ui.value_box("Reported Incidents", ui.output_text("crime_count")),
-        ui.value_box("Crime Rate", ui.output_text("crime_rate")),
-        ui.value_box("Average Comparison", ui.output_ui("average_comparison")),
-        ui.value_box("Neighbourhood Safety Rank", ui.output_text("neighbourhood_rank")),
+        ui.value_box("Reported Incidents", 
+                    ui.output_text("crime_count"),
+                    class_="border border-dark shadow-sm",
+                    showcase=fa.icon_svg("file-invoice", width="24px", height="35px"),
+                    theme="light",
+                    height="110px"),
+        ui.value_box("Crime Rate", 
+                    ui.output_text("crime_rate"),
+                    class_="border border-dark shadow-sm",
+                    showcase=fa.icon_svg("chart-line",  width="24px", height="45px"),
+                    theme="light",
+                    height="110px"),
+        ui.value_box("Average Comparison",
+                    ui.output_ui("average_comparison"),
+                    class_="border border-dark shadow-sm",
+                    showcase=fa.icon_svg("scale-balanced",  width="24px", height="45px"),
+                    theme="light",
+                    height="110px"),
+        ui.value_box("Neighbourhood Safety Rank", 
+                    ui.output_text("neighbourhood_rank"),
+                    class_="border border-dark shadow-sm",
+                    showcase=fa.icon_svg("shield-halved",  width="24px", height="40px"),
+                    theme="light",
+                    height="110px"),
         fill=False,
     ),
     ui.layout_columns(
         ui.card(
-            ui.card_header(ui.strong("Crime Map by Neigbourhood")),
+            ui.card_header(ui.strong("Overview of Crime Occurrences across Vancouver's Neigbourhood")),
             ui.output_ui("crime_map"),
-            style="height: 100%; width: 100%;",
+            #style="height: 100%; width: 100%;",
             full_screen=True
             ),
         ui.layout_columns(
             ui.card(
-                # ui.card_header(ui.strong("Count of Crime Type")),
                 ui.card_header(ui.strong("Top Crime Types")),
                 output_widget("top_crime_type_bar"),
                 full_screen=True,
-                # ui.card_body(output_widget("top_crime_type_bar", width="100%", height="100%"),
-                # fill=True
-                # ),
-                #full_screen=True,
-                #fill=True
                 ),
             ui.card(
                 ui.card_header(ui.strong("Crime Occurrences By Time of Day")), 
-                ui.card_body(output_widget("time_of_day_plot", width="100%", height="100%"),
-                fill=True,
-                ),
+                output_widget("time_of_day_plot"),
+                padding=0,
+                #ui.card_body(output_widget("time_of_day_plot"), #, width="100%", height="100%"),
+                #fill=True, full_screen=True),
                 full_screen=True,
                 fill=True
                 ),
             col_widths=[12,12],
             fill=True
         ),
-        col_widths=[7, 5],
-        ),
-    title=ui.tags.h2("Vancouver Neighbourhood Safety", style="font-weight: bold;"), fillable=True,
+    col_widths=[7, 5],
+    ),
+    fillable=True,
+    style="border-right: 2px solid black;"
+    )
 )
 
 def server(input, output, session):
@@ -216,19 +245,22 @@ def server(input, output, session):
             tooltip=[alt.Tooltip('TIME_OF_DAY:N', title='Time of Day'), alt.Tooltip('percent:Q', format='.1%', title='Percentage'), alt.Tooltip('count:Q', format=',', title='Count')]
         )
 
-        slices = base.mark_arc(innerRadius=60, outerRadius=120)
+        slices = base.mark_arc(innerRadius=30, outerRadius=60)
 
 
-        text = base.mark_text(radius=160, size=12).encode(
+        text = base.mark_text(radius=90, size=11, align='center', baseline='bottom').encode(
             text='full_label:N'
         )
-
-        pie_chart = (slices + text).properties(
-            width=400,
-            height=300
-        ).configure_view(
+        
+        pie_chart = (text + slices).configure_view(
             stroke=None 
         )
+        # pie_chart = (slices + text).properties(
+        #     width=400,
+        #     height=300
+        # ).configure_view(
+        #     stroke=None 
+        # )
 
         return pie_chart
 
