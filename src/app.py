@@ -11,11 +11,11 @@ import faicons as fa
 import querychat
 from chatlas import ChatGithub, ChatAnthropic
 from dotenv import load_dotenv
-from pathlib import Path
+import os
 
 load_dotenv()
 
-
+api_key = os.getenv("ANTHROPIC_API_KEY")
 
 crime_df = pd.read_csv("data/processed/processed_vancouver_crime_data_2025.csv")
 population_df = pd.read_csv("data/raw/van_pop_2016.csv")
