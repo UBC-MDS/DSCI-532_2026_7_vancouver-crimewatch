@@ -26,6 +26,8 @@ In the main panel, the dashboard displays multiple KPI metrics for crime numbers
 - Bar chart of the top 5 crime yypes by % share
 - Donut chart of crime by time of day
 
+To run the chatbot locally, you will need to add your Anthropic API key in the .env file in the repo root with `ANTHROPIC_API_KEY=`
+
 These views are designed to help users quickly explore where incidents are happening, which crime types are most common, and when incidents tend to occur.
 
 ## Contributing

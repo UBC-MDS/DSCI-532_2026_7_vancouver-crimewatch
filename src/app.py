@@ -8,7 +8,14 @@ from folium.plugins import HeatMap
 import geopandas as gpd
 from pyproj import Transformer
 import faicons as fa
+import querychat
+from chatlas import ChatGithub, ChatAnthropic
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+
+api_key = os.getenv("ANTHROPIC_API_KEY")
 
 crime_df = pd.read_csv("data/processed/processed_vancouver_crime_data_2025.csv")
 population_df = pd.read_csv("data/raw/van_pop_2016.csv")
@@ -53,78 +60,135 @@ header = ui.div(
     style="background-color: #023047;"
 )
 
-app_ui = ui.page_fillable( 
-    header,
-    ui.layout_sidebar(
-        ui.sidebar(
-            ui.input_select("nb", "Neighbourhood",
-                neighbourhoods),
-            ui.input_select("crime_type", "Crime Type",
-                crime_types),
-            ui.input_select("month", "Month",
-                months),
-            ui.input_select("daily_time", "Time of Day",
-                time_of_day),
-            full_screen=True,
-            width=250,
-            bg="#f8f9fa",
+qc = querychat.QueryChat(
+    crime_df.copy(),
+    "VancouverNeighbourhoodSafety",
+    greeting="""👋 Hi there! I am your friendly Vancouver neighbourhood crime bot. Ask me anything about the crimes in Vancouver.
+
+1. Sorting the data <span class="suggestion">Show me all crime from newest to oldest by date it happened</span>
+2. Filter the data <span class="suggestion">Show me all mischief crimes</span>
+3. Answer questions about the data: <span class="suggestion">How does the crime rate of Kitsilano compare to the Vancouver average?</span>
+
+You can also say <span class="suggestion">Reset</span> to clear the current filter/sort, or <span class="suggestion">Help</span> for more usage tips.
+""",
+    data_description="""
+Vancouver Police Department crime incident dataset used to analyze neighbourhood safety and crime patterns in Vancouver.
+
+Each row represents a single reported crime incident.
+
+Columns:
+- TYPE: Category of the crime (e.g., Mischief, Break and Enter Commercial, Theft from Vehicle).
+- YEAR: Year when the incident occurred.
+- MONTH: Month of the incident (1–12).
+- DAY: Day of the month when the incident occurred.
+- HOUR: Hour of the day when the incident occurred (0–23).
+- MINUTE: Minute when the incident occurred.
+- HUNDRED_BLOCK: Approximate street block where the crime occurred (e.g., "10XX HORNBY ST").
+- NEIGHBOURHOOD: Vancouver neighbourhood where the incident took place (e.g., Downtown, West End, Sunset).
+- X: UTM easting coordinate of the incident location (EPSG:32610).
+- Y: UTM northing coordinate of the incident location (EPSG:32610).
+
+The dataset can be used to analyze:
+- crime frequency by type
+- crime patterns by neighbourhood
+- temporal trends by year, month, day, or hour
+- spatial patterns of crime locations across Vancouver.
+""",
+    client=ChatAnthropic(model="claude-sonnet-4-0"),
+)
+
+app_ui = ui.page_navbar( 
+    ui.nav_panel(
+        "LLM Chat",
+        ui.layout_sidebar(
+            qc.sidebar(),
+            ui.card(
+                ui.card_header(
+                    ui.output_text("title"),
+                    ui.download_button("download_filtered", 
+                                       "Download data"),
+                    class_="d-flex justify-content-between align-items-center"
+                    ),
+                ui.output_data_frame("data_table"),
+                fill=True,
+            ),
+            fillable=True,
         ),
-    ui.layout_columns(
-        ui.value_box("Reported Incidents", 
-                    ui.output_text("crime_count"),
-                    class_="border border-dark shadow-sm",
-                    showcase=fa.icon_svg("file-invoice", width="24px", height="35px"),
-                    theme="light",
-                    height="110px"),
-        ui.value_box("Crime Rate", 
-                    ui.output_text("crime_rate"),
-                    class_="border border-dark shadow-sm",
-                    showcase=fa.icon_svg("chart-line",  width="24px", height="45px"),
-                    theme="light",
-                    height="110px"),
-        ui.value_box("Average Comparison",
-                    ui.output_ui("average_comparison"),
-                    class_="border border-dark shadow-sm",
-                    showcase=fa.icon_svg("scale-balanced",  width="24px", height="45px"),
-                    theme="light",
-                    height="110px"),
-        ui.value_box("Neighbourhood Safety Rank", 
-                    ui.output_text("neighbourhood_rank"),
-                    class_="border border-dark shadow-sm",
-                    showcase=fa.icon_svg("shield-halved",  width="24px", height="40px"),
-                    theme="light",
-                    height="110px"),
-        fill=False,
     ),
-    ui.layout_columns(
-        ui.card(
-            ui.card_header(ui.strong("Overview of Crime Occurrences across Vancouver's Neigbourhood")),
-            ui.output_ui("crime_map"),
-            #style="height: 100%; width: 100%;",
-            full_screen=True
+    ui.nav_panel(
+        "Main dashboard",
+        header,
+        ui.layout_sidebar(
+            ui.sidebar(
+                ui.input_select("nb", "Neighbourhood",
+                    neighbourhoods),
+                ui.input_select("crime_type", "Crime Type",
+                    crime_types),
+                ui.input_select("month", "Month",
+                    months),
+                ui.input_select("daily_time", "Time of Day",
+                    time_of_day),
+                full_screen=True,
+                width=250,
+                bg="#f8f9fa",
             ),
         ui.layout_columns(
-            ui.card(
-                ui.card_header(ui.strong("Top Crime Types")),
-                output_widget("top_crime_type_bar"),
-                full_screen=True,
-                ),
-            ui.card(
-                ui.card_header(ui.strong("Crime Occurrences By Time of Day")), 
-                output_widget("time_of_day_plot"),
-                padding=0,
-                #ui.card_body(output_widget("time_of_day_plot"), #, width="100%", height="100%"),
-                #fill=True, full_screen=True),
-                full_screen=True,
-                fill=True
-                ),
-            col_widths=[12,12],
-            fill=True
+            ui.value_box("Reported Incidents", 
+                        ui.output_text("crime_count"),
+                        class_="border border-dark shadow-sm",
+                        showcase=fa.icon_svg("file-invoice", width="24px", height="35px"),
+                        theme="light",
+                        height="110px"),
+            ui.value_box("Crime Rate", 
+                        ui.output_text("crime_rate"),
+                        class_="border border-dark shadow-sm",
+                        showcase=fa.icon_svg("chart-line",  width="24px", height="45px"),
+                        theme="light",
+                        height="110px"),
+            ui.value_box("Average Comparison",
+                        ui.output_ui("average_comparison"),
+                        class_="border border-dark shadow-sm",
+                        showcase=fa.icon_svg("scale-balanced",  width="24px", height="45px"),
+                        theme="light",
+                        height="110px"),
+            ui.value_box("Neighbourhood Safety Rank", 
+                        ui.output_text("neighbourhood_rank"),
+                        class_="border border-dark shadow-sm",
+                        showcase=fa.icon_svg("shield-halved",  width="24px", height="40px"),
+                        theme="light",
+                        height="110px"),
+            fill=False,
         ),
-    col_widths=[7, 5],
-    ),
-    fillable=True,
-    style="border-right: 2px solid black;"
+        ui.layout_columns(
+            ui.card(
+                ui.card_header(ui.strong("Overview of Crime Occurrences across Vancouver's Neigbourhood")),
+                ui.output_ui("crime_map"),
+                #style="height: 100%; width: 100%;",
+                full_screen=True
+                ),
+            ui.layout_columns(
+                ui.card(
+                    ui.card_header(ui.strong("Top Crime Types")),
+                    output_widget("top_crime_type_bar"),
+                    full_screen=True,
+                    ),
+                ui.card(
+                    ui.card_header(ui.strong("Crime Occurrences By Time of Day")), 
+                    output_widget("time_of_day_plot"),
+                    padding=0,
+                    #ui.card_body(output_widget("time_of_day_plot"), #, width="100%", height="100%"),
+                    #fill=True, full_screen=True),
+                    full_screen=True,
+                    fill=True
+                    ),
+                col_widths=[12,12],
+                fill=True
+            ),
+        col_widths=[7, 5],
+        ),
+        fillable=True,
+        style="border-right: 2px solid black;"
+        )
     )
 )
 
@@ -561,6 +625,24 @@ def server(input, output, session):
         m.get_root().html.add_child(folium.Element(toggle_legend_js))
 
         return ui.HTML(m._repr_html_())
+    
+    qc_vals = qc.server()
 
+    @reactive.calc
+    def query_df():
+        return qc_vals.df()
+
+    @render.text
+    def title():
+        return qc_vals.title() or "Vancouver Neighbourhood Crimes"
+
+    @render.data_frame
+    def data_table():
+        return query_df()
+    
+    @render.download(filename="vancouver_neighbourhood_crimes.csv")
+    def download_filtered():
+        df = query_df()
+        yield df.to_csv(index=False)
 
 app = App(app_ui, server=server)
