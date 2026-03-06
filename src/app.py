@@ -128,17 +128,17 @@ app_ui = ui.page_navbar(
                     months),
                 ui.input_select("daily_time", "Time of Day",
                     time_of_day),
-                ui.input_checkbox_group(
-                    "map_layers",
-                    "Map Layers",
-                    choices={
-                        #"neighbourhoods": "Neighbourhoods",
-                        "heatmap": "Heatmap",
-                        "pointsmap": "Points",
-                        "ratesmap": "Rate / 1,000 residents",
-                    },
-                    selected=["heatmap"]
-                ),
+                # ui.input_checkbox_group(
+                #     "map_layers",
+                #     "Map Layers",
+                #     choices={
+                #         #"neighbourhoods": "Neighbourhoods",
+                #         "heatmap": "Heatmap",
+                #         "pointsmap": "Points",
+                #         "ratesmap": "Rate / 1,000 residents",
+                #     },
+                #     selected=["heatmap"]
+                # ),
                 full_screen=True,
                 width=250,
                 bg="#f8f9fa",
@@ -523,7 +523,7 @@ def server(input, output, session):
         vancity_center = [49.2827, -123.1207]
         nb = input.nb()
         rates = neighbourhood_rates()
-        layers = input.map_layers()
+        #layers = input.map_layers()
         
         # Map base
         m = folium.Map(
@@ -558,7 +558,8 @@ def server(input, output, session):
         points = filtered_latlon()
 
         # Heatmap layer
-        if "heatmap" in layers:
+        #if "heatmap" in layers:
+        if input.show_heatmap():
             heat_layer = folium.FeatureGroup(name="Heatmap", show=True)
             heat_data = points[["lat", "lon"]].values.tolist()
 
@@ -575,7 +576,8 @@ def server(input, output, session):
             heat_layer.add_to(m)
         
         # Points layer
-        if "pointsmap" in layers:
+        #if "pointsmap" in layers:
+        if input.show_points():
             points_layer = folium.FeatureGroup(name="Points", show=True)
             max_points = 2000
             points_for_markers = points.head(max_points)
@@ -592,7 +594,8 @@ def server(input, output, session):
             points_layer.add_to(m)
 
         # Choropleth layer for crime rates by neighbourhood
-        if "ratesmap" in layers:
+        #if "ratesmap" in layers:
+        if input.show_rates():
             # Merge rates into polygons
             gdf_rate = neigh_gdf.merge(
                 rates,
