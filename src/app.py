@@ -8,6 +8,13 @@ from folium.plugins import HeatMap
 import geopandas as gpd
 from pyproj import Transformer
 import faicons as fa
+import querychat
+from chatlas import ChatGithub, ChatAnthropic
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv()
+
 
 
 crime_df = pd.read_csv("data/processed/processed_vancouver_crime_data_2025.csv")
@@ -53,14 +60,60 @@ header = ui.div(
     style="background-color: #023047;"
 )
 
+qc = querychat.QueryChat(
+    crime_df.copy(),
+    "VancouverNeighbourhoodSafety",
+    greeting="""👋 Hi there! I am your friendly Vancouver neighbourhood crime bot. Ask me anything about the crimes in Vancouver.
+
+1. Sorting the data <span class="suggestion">Show me all crime from newest to oldest by date it happened</span>
+2. Filter the data <span class="suggestion">Show me all mischief crimes</span>
+3. Answer questions about the data: <span class="suggestion">How does the crime rate of Kitsilano compare to the Vancouver average?</span>
+
+You can also say <span class="suggestion">Reset</span> to clear the current filter/sort, or <span class="suggestion">Help</span> for more usage tips.
+""",
+    data_description="""
+Vancouver Police Department crime incident dataset used to analyze neighbourhood safety and crime patterns in Vancouver.
+
+Each row represents a single reported crime incident.
+
+Columns:
+- TYPE: Category of the crime (e.g., Mischief, Break and Enter Commercial, Theft from Vehicle).
+- YEAR: Year when the incident occurred.
+- MONTH: Month of the incident (1–12).
+- DAY: Day of the month when the incident occurred.
+- HOUR: Hour of the day when the incident occurred (0–23).
+- MINUTE: Minute when the incident occurred.
+- HUNDRED_BLOCK: Approximate street block where the crime occurred (e.g., "10XX HORNBY ST").
+- NEIGHBOURHOOD: Vancouver neighbourhood where the incident took place (e.g., Downtown, West End, Sunset).
+- X: UTM easting coordinate of the incident location (EPSG:32610).
+- Y: UTM northing coordinate of the incident location (EPSG:32610).
+
+The dataset can be used to analyze:
+- crime frequency by type
+- crime patterns by neighbourhood
+- temporal trends by year, month, day, or hour
+- spatial patterns of crime locations across Vancouver.
+""",
+    client=ChatAnthropic(model="claude-sonnet-4-0"),
+)
+
 app_ui = ui.page_navbar( 
     ui.nav_panel(
         "LLM Chat",
-        ui.card(
-                ui.card_header(ui.output_text("chat_title")),
-                ui.output_data_frame("chat_table"),
+        ui.layout_sidebar(
+            qc.sidebar(),
+            ui.card(
+                ui.card_header(
+                    ui.output_text("title"),
+                    ui.download_button("download_filtered", 
+                                       "Download data"),
+                    class_="d-flex justify-content-between align-items-center"
+                    ),
+                ui.output_data_frame("data_table"),
                 fill=True,
             ),
+            fillable=True,
+        ),
     ),
     ui.nav_panel(
         "Main dashboard",
@@ -572,6 +625,24 @@ def server(input, output, session):
         m.get_root().html.add_child(folium.Element(toggle_legend_js))
 
         return ui.HTML(m._repr_html_())
+    
+    qc_vals = qc.server()
 
+    @reactive.calc
+    def query_df():
+        return qc_vals.df()
+
+    @render.text
+    def title():
+        return qc_vals.title() or "Vancouver Neighbourhood Crimes"
+
+    @render.data_frame
+    def data_table():
+        return query_df()
+    
+    @render.download(filename="vancouver_neighbourhood_crimes.csv")
+    def download_filtered():
+        df = query_df()
+        yield df.to_csv(index=False)
 
 app = App(app_ui, server=server)
