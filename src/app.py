@@ -173,22 +173,23 @@ app_ui = ui.page_navbar(
             ),
             ui.layout_columns(
                 ui.div(
-                    ui.card(
-                        ui.card_header(ui.strong("Map Layers")),
-                        ui.layout_columns(
-                            #ui.input_switch("show_neighbourhoods", "Neighbourhoods", True),
-                            ui.input_switch("show_heatmap", "Heatmap", True),
-                            ui.input_switch("show_points", "Points", False),
-                            ui.input_switch("show_rates", "Rate per 1,000", False),
-                            style="""
-                                display: flex;
-                                gap: 1.5rem;
-                                align-items: center;
-                                padding: 0.25rem 0.5rem;
-                                flex-wrap: wrap;
-                            """
-                        ),
-                        full_screen=False
+                    ui.div(
+                        ui.strong("Map layers"),
+                        ui.input_switch("show_heatmap", "Heatmap", True),
+                        ui.input_switch("show_points", "Points", False),
+                        ui.input_switch("show_rates", "Rate per 1,000", False),
+                        style="""
+                            display:flex;
+                            gap:1rem;
+                            align-items:center;
+                            padding:0.2rem 0.6rem;
+                            background:#f8f9fa;
+                            border-bottom:1px solid #ddd;
+                            font-size:0.8rem;
+                            #white-space:nowrap;
+                            #vertical-align:middle;
+                            position:relative; top:10px;
+                        """
                     ),
                     ui.card(
                         ui.card_header(ui.strong("Crime Occurrences Across Vancouver's Neigbourhoods")),
@@ -216,13 +217,8 @@ app_ui = ui.page_navbar(
                         fill=True
                     ),
                     style="display: flex; flex-direction: column; gap: 0.75rem;"
-                    #col_widths=[12,12],
-                    #fill=True
                 ), #div
                 col_widths=[7, 5]
-            
-            #fillable=True,
-            #style="border-right: 2px solid black;"
             ),
         ),
     ),
