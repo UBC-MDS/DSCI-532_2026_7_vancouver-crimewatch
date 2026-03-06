@@ -132,12 +132,12 @@ app_ui = ui.page_navbar(
                     "map_layers",
                     "Map Layers",
                     choices={
-                        "neighbourhoods": "Neighbourhoods",
+                        #"neighbourhoods": "Neighbourhoods",
                         "heatmap": "Heatmap",
                         "pointsmap": "Points",
                         "ratesmap": "Rate / 1,000 residents",
                     },
-                    selected=["neighbourhoods", "heatmap"]
+                    selected=["heatmap"]
                 ),
                 full_screen=True,
                 width=250,
