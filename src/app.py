@@ -128,68 +128,100 @@ app_ui = ui.page_navbar(
                     months),
                 ui.input_select("daily_time", "Time of Day",
                     time_of_day),
+                # ui.input_checkbox_group(
+                #     "map_layers",
+                #     "Map Layers",
+                #     choices={
+                #         #"neighbourhoods": "Neighbourhoods",
+                #         "heatmap": "Heatmap",
+                #         "pointsmap": "Points",
+                #         "ratesmap": "Rate / 1,000 residents",
+                #     },
+                #     selected=["heatmap"]
+                # ),
                 full_screen=True,
                 width=250,
                 bg="#f8f9fa",
             ),
-        ui.layout_columns(
-            ui.value_box("Reported Incidents", 
-                        ui.output_text("crime_count"),
-                        class_="border border-dark shadow-sm",
-                        showcase=fa.icon_svg("file-invoice", width="24px", height="35px"),
-                        theme="light",
-                        height="110px"),
-            ui.value_box("Crime Rate", 
-                        ui.output_text("crime_rate"),
-                        class_="border border-dark shadow-sm",
-                        showcase=fa.icon_svg("chart-line",  width="24px", height="45px"),
-                        theme="light",
-                        height="110px"),
-            ui.value_box("Average Comparison",
-                        ui.output_ui("average_comparison"),
-                        class_="border border-dark shadow-sm",
-                        showcase=fa.icon_svg("scale-balanced",  width="24px", height="45px"),
-                        theme="light",
-                        height="110px"),
-            ui.value_box("Neighbourhood Safety Rank", 
-                        ui.output_text("neighbourhood_rank"),
-                        class_="border border-dark shadow-sm",
-                        showcase=fa.icon_svg("shield-halved",  width="24px", height="40px"),
-                        theme="light",
-                        height="110px"),
-            fill=False,
-        ),
-        ui.layout_columns(
-            ui.card(
-                ui.card_header(ui.strong("Overview of Crime Occurrences across Vancouver's Neigbourhood")),
-                ui.output_ui("crime_map"),
-                #style="height: 100%; width: 100%;",
-                full_screen=True
-                ),
+        
             ui.layout_columns(
-                ui.card(
-                    ui.card_header(ui.strong("Top Crime Types")),
-                    output_widget("top_crime_type_bar"),
-                    full_screen=True,
-                    ),
-                ui.card(
-                    ui.card_header(ui.strong("Crime Occurrences By Time of Day")), 
-                    output_widget("time_of_day_plot"),
-                    padding=0,
-                    #ui.card_body(output_widget("time_of_day_plot"), #, width="100%", height="100%"),
-                    #fill=True, full_screen=True),
-                    full_screen=True,
-                    fill=True
-                    ),
-                col_widths=[12,12],
-                fill=True
+                ui.value_box("Reported Incidents", 
+                            ui.output_text("crime_count"),
+                            class_="border border-dark shadow-sm",
+                            showcase=fa.icon_svg("file-invoice", width="24px", height="35px"),
+                            theme="light",
+                            height="110px"),
+                ui.value_box("Crime Rate", 
+                            ui.output_text("crime_rate"),
+                            class_="border border-dark shadow-sm",
+                            showcase=fa.icon_svg("chart-line",  width="24px", height="45px"),
+                            theme="light",
+                            height="110px"),
+                ui.value_box("Average Comparison",
+                            ui.output_ui("average_comparison"),
+                            class_="border border-dark shadow-sm",
+                            showcase=fa.icon_svg("scale-balanced",  width="24px", height="45px"),
+                            theme="light",
+                            height="110px"),
+                ui.value_box("Neighbourhood Safety Rank", 
+                            ui.output_text("neighbourhood_rank"),
+                            class_="border border-dark shadow-sm",
+                            showcase=fa.icon_svg("shield-halved",  width="24px", height="40px"),
+                            theme="light",
+                            height="110px"),
+                fill=False,
             ),
-        col_widths=[7, 5],
+            ui.layout_columns(
+                ui.div(
+                    ui.div(
+                        ui.strong("Map layers"),
+                        ui.input_switch("show_heatmap", "Heatmap", True),
+                        ui.input_switch("show_points", "Points", False),
+                        ui.input_switch("show_rates", "Rate per 1,000", False),
+                        style="""
+                            display:flex;
+                            gap:1rem;
+                            align-items:center;
+                            padding:0.2rem 0.6rem;
+                            background:#f8f9fa;
+                            border-bottom:1px solid #ddd;
+                            font-size:0.8rem;
+                            #white-space:nowrap;
+                            #vertical-align:middle;
+                            position:relative; top:10px;
+                        """
+                    ),
+                    ui.card(
+                        ui.card_header(ui.strong("Crime Occurrences Across Vancouver's Neigbourhoods")),
+                        ui.output_ui("crime_map"),
+                        #style="height: 100%; width: 100%;",
+                        full_screen=True,
+                        style="height: 700px;"
+                    ),
+                    style="display: flex; flex-direction: column; gap: 0.75rem;"
+                ), #div
+                ui.div(
+                    ui.card(
+                        ui.card_header(ui.strong("Top Crime Types")),
+                        output_widget("top_crime_type_bar"),
+                        full_screen=True,
+                        fill=True,
+                    ),
+                    ui.card(
+                        ui.card_header(ui.strong("Crime Occurrences By Time of Day")), 
+                        output_widget("time_of_day_plot"),
+                        padding=0,
+                        #ui.card_body(output_widget("time_of_day_plot"), #, width="100%", height="100%"),
+                        #fill=True, full_screen=True),
+                        full_screen=True,
+                        fill=True
+                    ),
+                    style="display: flex; flex-direction: column; gap: 0.75rem;"
+                ), #div
+                col_widths=[7, 5]
+            ),
         ),
-        fillable=True,
-        style="border-right: 2px solid black;"
-        )
-    )
+    ),
 )
 
 def server(input, output, session):
@@ -487,6 +519,7 @@ def server(input, output, session):
         vancity_center = [49.2827, -123.1207]
         nb = input.nb()
         rates = neighbourhood_rates()
+        #layers = input.map_layers()
         
         # Map base
         m = folium.Map(
@@ -497,7 +530,7 @@ def server(input, output, session):
             height="100%",
         )
 
-        # Add neighbourhood polygons (default style)
+        # Add neighbourhood polygons (default-persistent style)
         folium.GeoJson(
             neigh_gdf.__geo_interface__,
             name="Neighbourhoods",
@@ -515,68 +548,73 @@ def server(input, output, session):
                 ).add_to(m)
 
         # Add crime Heatmap and Points layers based on X/Y (lat/lon)
-        # Define toggleable layers
-       
-        # Heatmap layer (default on)
-        heat_layer = folium.FeatureGroup(name="Heatmap", show=True)
-
+        
+        # Map layers persistent state
+        # Show them if selected
         points = filtered_latlon()
-        heat_data = points[["lat", "lon"]].values.tolist()
 
-        if heat_data:
-            HeatMap(
-                heat_data,
-                # name="Crime Heatmap",
-                radius=14,
-                blur=18,
-                max_zoom=13,
-            # ).add_to(m)
-            ).add_to(heat_layer)
-        
-        heat_layer.add_to(m)
-        
-        # Points layer (optional)
-        points_layer = folium.FeatureGroup(name="Points", show=False)
+        # Heatmap layer
+        #if "heatmap" in layers:
+        if input.show_heatmap():
+            heat_layer = folium.FeatureGroup(name="Heatmap", show=True)
+            heat_data = points[["lat", "lon"]].values.tolist()
 
-        max_points = 2000
-        points_for_markers = points.head(max_points)
-
-        for lat, lon in points_for_markers[["lat", "lon"]].values:
-            folium.CircleMarker(
-                location=[lat, lon],
-                radius=3,
-                weight=1,
-                fill=True,
-                fill_opacity=0.4,
-            ).add_to(points_layer)
+            if heat_data:
+                HeatMap(
+                    heat_data,
+                    # name="Crime Heatmap",
+                    radius=14,
+                    blur=18,
+                    max_zoom=13,
+                # ).add_to(m)
+                ).add_to(heat_layer)
+            
+            heat_layer.add_to(m)
         
-        points_layer.add_to(m)
+        # Points layer
+        #if "pointsmap" in layers:
+        if input.show_points():
+            points_layer = folium.FeatureGroup(name="Points", show=True)
+            max_points = 2000
+            points_for_markers = points.head(max_points)
+
+            for lat, lon in points_for_markers[["lat", "lon"]].values:
+                folium.CircleMarker(
+                    location=[lat, lon],
+                    radius=3,
+                    weight=1,
+                    fill=True,
+                    fill_opacity=0.4,
+                ).add_to(points_layer)
+            
+            points_layer.add_to(m)
 
         # Choropleth layer for crime rates by neighbourhood
-        
-        # Merge rates into polygons
-        gdf_rate = neigh_gdf.merge(
-            rates,
-            left_on="Name",
-            right_on="NEIGHBOURHOOD",
-            how="left"
-        )
+        #if "ratesmap" in layers:
+        if input.show_rates():
+            # Merge rates into polygons
+            gdf_rate = neigh_gdf.merge(
+                rates,
+                left_on="Name",
+                right_on="NEIGHBOURHOOD",
+                how="left"
+            )
 
-        gdf_rate["incident_count"] = gdf_rate["incident_count"].fillna(0)
-        gdf_rate["rate_per_1000"] = gdf_rate["rate_per_1000"].fillna(0)
+            gdf_rate["incident_count"] = gdf_rate["incident_count"].fillna(0)
+            gdf_rate["rate_per_1000"] = gdf_rate["rate_per_1000"].fillna(0)
 
-        folium.Choropleth(
-            geo_data=gdf_rate.__geo_interface__,
-            data=gdf_rate[["Name", "rate_per_1000"]],
-            columns=["Name", "rate_per_1000"],
-            key_on="feature.properties.Name",
-            name="Rate per 1,000 residents",
-            fill_color="YlOrRd",
-            fill_opacity=0.6,
-            line_opacity=0.3,
-            legend_name="Incidents per 1,000 residents",
-            show=False
-        ).add_to(m)
+            folium.Choropleth(
+                geo_data=gdf_rate.__geo_interface__,
+                data=gdf_rate[["Name", "rate_per_1000"]],
+                columns=["Name", "rate_per_1000"],
+                key_on="feature.properties.Name",
+                name="Rate per 1,000 residents",
+                fill_color="YlOrRd",
+                fill_opacity=0.6,
+                line_opacity=0.3,
+                legend_name="Incidents per 1,000 residents",
+                show=True #False
+            ).add_to(m)
 
         # Zoom map to selected neighbourhood
         bounds = selected_neigh_bounds()
