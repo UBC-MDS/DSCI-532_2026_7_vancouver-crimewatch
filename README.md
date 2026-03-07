@@ -9,7 +9,7 @@ Both the *development* and the *stable* versions of this dashboard can be access
 [Development version](https://019c928e-e698-6cad-eba8-b45208bebd6f.share.connect.posit.cloud/)
 
 ## Demo
-![gif](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/blob/chore/demo-gif/img/vancouver-neighbourhood-safety.gif)
+![gif](./img/vancouver-neighbourhood-safety.gif)
 
 ## User Guide
 
