@@ -285,6 +285,40 @@ app_ui = ui.page_navbar(
 )
 
 def server(input, output, session):
+    
+    def resolve_filter(values):
+        "Helper function to convert 'All' selections to None for easier filtering logic"
+        if not values or "All" in values:
+            return None
+        return values
+    
+    def get_filtered_data(filter_nb=True, filter_crime=True, filter_month=True, filter_time=True):
+        df = crime_df.copy()
+        
+        if filter_nb:
+            nb_val = resolve_filter(input.nb())
+            if nb_val is not None:         
+                df = df[df["NEIGHBOURHOOD"].isin(nb_val)]
+                
+        if filter_crime:
+            crime_val = resolve_filter(input.crime_type())
+            if crime_val is not None: 
+                df = df[df["TYPE"].isin(crime_val)]
+                
+        if filter_month:
+            month_val = resolve_filter(input.month())
+            if month_val is not None:      
+                df = df[df["MONTH_NAME"].isin(month_val)]
+                
+        if filter_time:
+            time_val = resolve_filter(input.daily_time())
+            if time_val is not None: 
+                df = df[df["TIME_OF_DAY"].isin(time_val)]
+                
+        return df
+    
+
+    
     @reactive.calc
     def filtered_data():
         nb = input.nb()
