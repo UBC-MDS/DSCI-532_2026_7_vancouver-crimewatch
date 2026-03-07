@@ -177,13 +177,17 @@ app_ui = ui.page_navbar(
         ui.layout_sidebar(
             ui.sidebar(
                 ui.input_select("nb", "Neighbourhood",
-                    neighbourhoods),
+                    choices=neighbourhoods,
+                    multiple=True),
                 ui.input_select("crime_type", "Crime Type",
-                    crime_types),
+                    choices=crime_types,
+                    multiple=True),
                 ui.input_select("month", "Month",
-                    months),
+                    choices=months, 
+                    multiple=True),
                 ui.input_select("daily_time", "Time of Day",
-                    time_of_day),
+                    choices=time_of_day,
+                    multiple=True),
                 # ui.input_checkbox_group(
                 #     "map_layers",
                 #     "Map Layers",
