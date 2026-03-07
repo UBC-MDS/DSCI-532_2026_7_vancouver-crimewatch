@@ -8,7 +8,14 @@ from folium.plugins import HeatMap
 import geopandas as gpd
 from pyproj import Transformer
 import faicons as fa
+import querychat
+from chatlas import ChatGithub, ChatAnthropic
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+
+api_key = os.getenv("ANTHROPIC_API_KEY")
 
 crime_df = pd.read_csv("data/processed/processed_vancouver_crime_data_2025.csv")
 population_df = pd.read_csv("data/raw/van_pop_2016.csv")
@@ -44,132 +51,381 @@ def neigh_style_selected(_feature):
         "fillOpacity": 0.18, 
         "weight": 3
     }
-    
+
+
 header = ui.div(
-    ui.div(
-        ui.h1("🍁 Vancouver Neighbourhood Safety", class_="mb-0 fs-3"),
+    ui.h2(
+        "🍁 Vancouver Neighbourhood Safety",
+        style="margin-bottom:4px; font-weight:600;"
     ),
-    class_="text-white p-4 mb-0 d-flex justify-content-between align-items-center",
-    style="background-color: #023047;"
+    ui.p(
+        "Compare crime patterns across Vancouver neighbourhoods",
+        style="margin-bottom:2px;"
+    ),
+    ui.p(
+        "Explore where incidents cluster, which crime types are most common, and when they happen.",
+        style="margin-bottom:0; color:rgba(255,255,255,0.85);"
+    ),
+    style="""
+        background-color:#023047;
+        color:white;
+        padding:16px 20px;
+        border-radius:8px;
+        margin-bottom:14px;
+        border-bottom:4px solid #fb8500;
+    """
 )
 
-app_ui = ui.page_fillable( 
-    header,
-    ui.layout_sidebar(
-        ui.sidebar(
-            ui.input_select("nb", "Neighbourhood",
-                neighbourhoods),
-            ui.input_select("crime_type", "Crime Type",
-                crime_types),
-            ui.input_select("month", "Month",
-                months),
-            ui.input_select("daily_time", "Time of Day",
-                time_of_day),
-            full_screen=True,
-            width=250,
-            bg="#f8f9fa",
-        ),
-    ui.layout_columns(
-        ui.value_box("Reported Incidents", 
-                    ui.output_text("crime_count"),
-                    class_="border border-dark shadow-sm",
-                    showcase=fa.icon_svg("file-invoice", width="24px", height="35px"),
-                    theme="light",
-                    height="110px"),
-        ui.value_box("Crime Rate", 
-                    ui.output_text("crime_rate"),
-                    class_="border border-dark shadow-sm",
-                    showcase=fa.icon_svg("chart-line",  width="24px", height="45px"),
-                    theme="light",
-                    height="110px"),
-        ui.value_box("Average Comparison",
-                    ui.output_ui("average_comparison"),
-                    class_="border border-dark shadow-sm",
-                    showcase=fa.icon_svg("scale-balanced",  width="24px", height="45px"),
-                    theme="light",
-                    height="110px"),
-        ui.value_box("Neighbourhood Safety Rank", 
-                    ui.output_text("neighbourhood_rank"),
-                    class_="border border-dark shadow-sm",
-                    showcase=fa.icon_svg("shield-halved",  width="24px", height="40px"),
-                    theme="light",
-                    height="110px"),
-        fill=False,
-    ),
-    ui.layout_columns(
-        ui.card(
-            ui.card_header(ui.strong("Overview of Crime Occurrences across Vancouver's Neigbourhood")),
-            ui.output_ui("crime_map"),
-            #style="height: 100%; width: 100%;",
-            full_screen=True
+qc = querychat.QueryChat(
+    crime_df.copy(),
+    "VancouverNeighbourhoodSafety",
+    greeting="""👋 Hi there! I am your friendly Vancouver neighbourhood crime bot. Ask me anything about the crimes in Vancouver.
+
+1. Sorting the data <span class="suggestion">Show me all crime from newest to oldest by date it happened</span>
+2. Filter the data <span class="suggestion">Show me all mischief crimes</span>
+3. Answer questions about the data: <span class="suggestion">How does the crime rate of Kitsilano compare to the Vancouver average?</span>
+
+You can also say <span class="suggestion">Reset</span> to clear the current filter/sort, or <span class="suggestion">Help</span> for more usage tips.
+""",
+    data_description="""
+Vancouver Police Department crime incident dataset used to analyze neighbourhood safety and crime patterns in Vancouver.
+
+Each row represents a single reported crime incident.
+
+Columns:
+- TYPE: Category of the crime (e.g., Mischief, Break and Enter Commercial, Theft from Vehicle).
+- YEAR: Year when the incident occurred.
+- MONTH: Month of the incident (1–12).
+- DAY: Day of the month when the incident occurred.
+- HOUR: Hour of the day when the incident occurred (0–23).
+- MINUTE: Minute when the incident occurred.
+- HUNDRED_BLOCK: Approximate street block where the crime occurred (e.g., "10XX HORNBY ST").
+- NEIGHBOURHOOD: Vancouver neighbourhood where the incident took place (e.g., Downtown, West End, Sunset).
+- X: UTM easting coordinate of the incident location (EPSG:32610).
+- Y: UTM northing coordinate of the incident location (EPSG:32610).
+
+The dataset can be used to analyze:
+- crime frequency by type
+- crime patterns by neighbourhood
+- temporal trends by year, month, day, or hour
+- spatial patterns of crime locations across Vancouver.
+""",
+    client=ChatAnthropic(model="claude-sonnet-4-0"),
+)
+
+app_ui = ui.page_navbar(
+    ui.nav_panel(
+        "LLM Chat",
+        ui.layout_sidebar(
+            qc.sidebar(),
+            ui.card(
+                ui.card_header(
+                    ui.output_text("title"),
+                    ui.download_button("download_filtered", 
+                                       "Download data"),
+                    class_="d-flex justify-content-between align-items-center"
+                    ),
+                ui.output_data_frame("data_table"),
+                fill=True,
             ),
-        ui.layout_columns(
-            ui.card(
-                ui.card_header(ui.strong("Top Crime Types")),
-                output_widget("top_crime_type_bar"),
-                full_screen=True,
+            ui.layout_columns(
+                ui.card(
+                    ui.div(
+                        "Incidents Found",
+                        style="font-size:0.9rem; color:#666; line-height:1; margin-bottom:0.2rem;"
+                    ),
+                    ui.div(
+                        ui.output_text("chat_crime_count"),
+                        style="font-size:1.4rem; font-weight:600; line-height:1;"
+                    ),
+                    class_="border border-dark shadow-sm",
+                    style="height:100px; padding:0rem 0rem; overflow:hidden;"
                 ),
-            ui.card(
-                ui.card_header(ui.strong("Crime Occurrences By Time of Day")), 
-                output_widget("time_of_day_plot"),
-                padding=0,
-                #ui.card_body(output_widget("time_of_day_plot"), #, width="100%", height="100%"),
-                #fill=True, full_screen=True),
-                full_screen=True,
-                fill=True
+                ui.card(
+                    ui.div(
+                        "Most Affected Neighbourhood",
+                        style="font-size:0.9rem; color:#666; line-height:1; margin-bottom:0.2rem;"
+                    ),
+                    ui.div(
+                        ui.output_text("chat_top_neighbourhood"),
+                        style="font-size:1.4rem; font-weight:600; line-height:1;"
+                    ),
+                    class_="border border-dark shadow-sm",
+                    style="height:100px; padding:0rem 0rem; overflow:hidden;"
                 ),
-            col_widths=[12,12],
-            fill=True
+                ui.card(
+                    ui.div(
+                        "Most Common Crime",
+                        style="font-size:0.9rem; color:#666; line-height:1; margin-bottom:0.2rem;"
+                    ),
+                    ui.div(
+                        ui.output_text("chat_top_crime"),
+                        style="font-size:1.4rem; font-weight:600; line-height:1;"
+                    ),
+                    class_="border border-dark shadow-sm",
+                    style="height:100px; padding:0rem 0rem; overflow:hidden;"
+                ),
+                fillable=False,
+            ),
+            fillable=True,
+
         ),
-    col_widths=[7, 5],
     ),
-    fillable=True,
-    style="border-right: 2px solid black;"
+    ui.nav_panel(
+        "Main dashboard",
+        header,
+        ui.layout_sidebar(
+            ui.sidebar(
+                ui.input_selectize("nb", "Neighbourhood",
+                    choices=neighbourhoods,
+                    multiple=True,
+                    selected=["Downtown", "West End"]), 
+                ui.input_selectize("crime_type", "Crime Type",
+                    choices=crime_types,
+                    multiple=True,
+                    selected="Break and Enter Residential/Other"),
+                ui.input_selectize("month", "Month",
+                    choices=months, 
+                    multiple=False,
+                    selected="All"),
+                ui.input_selectize("daily_time", "Time of Day",
+                    choices=time_of_day,
+                    multiple=False,
+                    selected="All"),
+                ui.input_action_button("clear_filters", "Clear All Filters", 
+                    class_="btn btn-secondary btn-sm w-100 mt-2",
+                    style="""
+                    background-color:#023047;
+                    color:white;
+                    """),
+                # ui.input_checkbox_group(
+                #     "map_layers",
+                #     "Map Layers",
+                #     choices={
+                #         #"neighbourhoods": "Neighbourhoods",
+                #         "heatmap": "Heatmap",
+                #         "pointsmap": "Points",
+                #         "ratesmap": "Rate / 1,000 residents",
+                #     },
+                #     selected=["heatmap"]
+                # ),
+                full_screen=True,
+                width=250,
+                bg="#f8f9fa",
+            ),
+            ####################################################################################################
+            ###### KINDLY NOTE THAT: The styling for the value boxes Code block below  was customized with Gemini #####
+            ####################################################################################################
+            ui.layout_columns(
+            ui.div(
+                ui.div(fa.icon_svg("file-invoice", width="16px", height="16px"), " Reported Incidents", style="font-size: 14px; color: #444; margin-bottom: 4px;"),
+                ui.div(ui.output_text("crime_count"), style="font-size: 26px; font-weight: bold; line-height: 1;"),
+                class_="card border border-dark shadow-sm",
+                style="padding: 15px; height: 90px; display: flex; flex-direction: column; justify-content: center;"
+            ),
+            
+            ui.div(
+                ui.div(fa.icon_svg("chart-line", width="16px", height="16px"), " Crime Rate", style="font-size: 14px; color: #444; margin-bottom: 4px;"),
+                ui.div(ui.output_text("crime_rate"), style="font-size: 26px; font-weight: bold; line-height: 1;"),
+                class_="card border border-dark shadow-sm",
+                style="padding: 15px; height: 90px; display: flex; flex-direction: column; justify-content: center;"
+            ),
+            
+            ui.div(
+                ui.div(fa.icon_svg("scale-balanced", width="16px", height="16px"), " Average Comparison", style="font-size: 14px; color: #444; margin-bottom: 4px;"),
+                ui.div(ui.output_ui("average_comparison"), style="font-size: 26px; font-weight: bold; line-height: 1;"),
+                class_="card border border-dark shadow-sm",
+                style="padding: 15px; height: 90px; display: flex; flex-direction: column; justify-content: center;"
+            ),
+            
+            ui.div(
+                ui.div(fa.icon_svg("shield-halved", width="16px", height="16px"), " Neighbourhood Safety Rank", style="font-size: 14px; color: #444; margin-bottom: 4px;"),
+                ui.div(ui.output_text("neighbourhood_rank"), style="font-size: 26px; font-weight: bold; line-height: 1;"),
+                class_="card border border-dark shadow-sm",
+                style="padding: 15px; height: 90px; display: flex; flex-direction: column; justify-content: center;"
+            ),
+            fill=False,
+            
+            ),
+            ui.layout_columns(
+                ui.div(
+                    ui.div(
+                        ui.strong("Map layers"),
+                        ui.input_switch("show_heatmap", "Heatmap", True),
+                        ui.input_switch("show_points", "Points", False),
+                        ui.input_switch("show_rates", "Rate per 1,000", False),
+                        style="""
+                            display:flex;
+                            gap:1rem;
+                            align-items:center;
+                            padding:0.2rem 0.6rem;
+                            background:#f8f9fa;
+                            border-bottom:1px solid #ddd;
+                            font-size:0.8rem;
+                            #white-space:nowrap;
+                            #vertical-align:middle;
+                            position:relative; top:10px;
+                        """
+                    ),
+                    ui.card(
+                        ui.card_header(ui.strong("Crime Occurrences Across Neigbourhoods")),
+                        ui.output_ui("crime_map"),
+                        #style="height: 100%; width: 100%;",
+                        full_screen=True,
+                        style="height: 600px;"
+                    ),
+                    style="display: flex; flex-direction: column; gap: 0.75rem;"
+                ), #div
+                ui.div(
+                    ui.card(
+                        ui.card_header(ui.strong("Top Crime Types")),
+                        output_widget("top_crime_type_bar"),
+                        full_screen=True,
+                        #fill=True,
+                        style="""
+                            height: 320px;
+                            flex-grow: 1 1 0;
+                        """
+                    ),
+                    ui.card(
+                        ui.card_header(ui.strong("Crime Occurrences By Time of Day")), 
+                        output_widget("time_of_day_plot"),
+                        padding=0,
+                        #ui.card_body(output_widget("time_of_day_plot"), #, width="100%", height="100%"),
+                        #fill=True, full_screen=True),
+                        full_screen=True,
+                        #fill=True
+                        style="""
+                            height: 320px;
+                            flex-grow: 1 1 0;
+                        """
+                    ),
+                    style="""
+                        display: flex;
+                        flex-direction: column;
+                        gap: 0.2rem;
+                        height: 100%;
+                    """
+                ), #div
+                col_widths=[7, 5],
+                fill=True
+            ),
+        ),
     )
 )
 
 def server(input, output, session):
+    
+    def resolve_filter(values):
+        "Helper function to convert 'All' selections to None for easier filtering logic"
+        if not values or "All" in values:
+            return None
+        if isinstance(values, str):
+            return [values]
+        return values
+    
+    def get_filtered_data(filter_nb=True, filter_crime=True, filter_month=True, filter_time=True):
+        """Helper function to apply selected filters to the vancouver neighbourhood data 
+        based on which filters are enabled"""
+        df = crime_df.copy()
+        
+        if filter_nb:
+            nb_val = resolve_filter(input.nb())
+            if nb_val is not None:         
+                df = df[df["NEIGHBOURHOOD"].isin(nb_val)]
+                
+        if filter_crime:
+            crime_val = resolve_filter(input.crime_type())
+            if crime_val is not None: 
+                df = df[df["TYPE"].isin(crime_val)]
+                
+        if filter_month:
+            month_val = resolve_filter(input.month())
+            if month_val is not None:      
+                df = df[df["MONTH_NAME"].isin(month_val)]
+                
+        if filter_time:
+            time_val = resolve_filter(input.daily_time())
+            if time_val is not None: 
+                df = df[df["TIME_OF_DAY"].isin(time_val)]
+                
+        return df
+    
+    @reactive.effect
+    @reactive.event(input.clear_filters)
+    def clear_all_filters():
+        ui.update_selectize("nb", selected=[])
+        ui.update_selectize("crime_type", selected=[])
+        ui.update_selectize("month", selected=[])
+        ui.update_selectize("daily_time", selected=[])
+    
     @reactive.calc
     def filtered_data():
-        nb = input.nb()
-        crime_type = input.crime_type()
-        month = input.month()
-        daily_time = input.daily_time()
-        df = crime_df.copy()
-        if nb != "All":
-            df = df[df["NEIGHBOURHOOD"] == nb]
-        if crime_type != "All":
-            df = df[df["TYPE"] == crime_type]
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
-        if daily_time != "All":
-            df = df[df["TIME_OF_DAY"] == daily_time]
-        return df
+        return get_filtered_data()
+        # nb = input.nb()
+        # crime_type = input.crime_type()
+        # month = input.month()
+        # daily_time = input.daily_time()
+        # df = crime_df.copy()
+        # if nb != "All":
+        #     df = df[df["NEIGHBOURHOOD"] == nb]
+        # if crime_type != "All":
+        #     df = df[df["TYPE"] == crime_type]
+        # if month != "All":
+        #     df = df[df["MONTH_NAME"] == month]
+        # if daily_time != "All":
+        #     df = df[df["TIME_OF_DAY"] == daily_time]
+        # return df
     
     @reactive.calc
     def filtered_population():
-        nb = input.nb()
-        if nb == "All":
+        nb_values = resolve_filter(input.nb())
+        if nb_values is None:
             return population_df["POPULATION"].sum()
         else:
-            pop = population_df[population_df["NEIGHBOURHOOD"] == nb]["POPULATION"]
-            return pop.iloc[0] if not pop.empty else 0
+            pop = population_df[population_df["NEIGHBOURHOOD"].isin(nb_values)]["POPULATION"]
+            return pop.sum() if not pop.empty else 0
+        # nb = input.nb()
+        # if nb == "All":
+        #     return population_df["POPULATION"].sum()
+        # else:
+        #     pop = population_df[population_df["NEIGHBOURHOOD"] == nb]["POPULATION"]
+        #     return pop.iloc[0] if not pop.empty else 0
         
+    # @reactive.calc
+    # def neighbourhood_ranking():
+    #     nb = input.nb()
+    #     crime_type = input.crime_type()
+    #     month = input.month()
+    #     daily_time = input.daily_time()
+    #     if nb == "All":
+    #         return None
+    #     df = crime_df.copy()
+    #     if crime_type != "All":
+    #         df = df[df["TYPE"] == crime_type]
+    #     if month != "All":
+    #         df = df[df["MONTH_NAME"] == month]
+    #     if daily_time != "All":
+    #         df = df[df["TIME_OF_DAY"] == daily_time]
+    #     crime_counts = df.groupby("NEIGHBOURHOOD").size()
+    #     rates = crime_counts / population_df.set_index("NEIGHBOURHOOD")["POPULATION"] * 100
+    #     ranked = rates.sort_values(ascending=True).reset_index()
+    #     if nb in ranked["NEIGHBOURHOOD"].values:
+    #         rank = ranked[ranked["NEIGHBOURHOOD"] == nb].index[0] + 1
+    #         total = len(ranked)
+    #         return f"{rank} / {total}"
+    #     return None
+    
     @reactive.calc
     def neighbourhood_ranking():
-        nb = input.nb()
-        crime_type = input.crime_type()
-        month = input.month()
-        daily_time = input.daily_time()
-        if nb == "All":
+        nb_values = resolve_filter(input.nb())
+        
+        if nb_values is None:
             return None
-        df = crime_df.copy()
-        if crime_type != "All":
-            df = df[df["TYPE"] == crime_type]
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
-        if daily_time != "All":
-            df = df[df["TIME_OF_DAY"] == daily_time]
+            
+        df = get_filtered_data(filter_nb=False)
+        nb = nb_values[0]
+        
         crime_counts = df.groupby("NEIGHBOURHOOD").size()
         rates = crime_counts / population_df.set_index("NEIGHBOURHOOD")["POPULATION"] * 100
         ranked = rates.sort_values(ascending=True).reset_index()
@@ -178,6 +434,7 @@ def server(input, output, session):
             total = len(ranked)
             return f"{rank} / {total}"
         return None
+    
     
     @render.text
     def crime_count():
@@ -194,9 +451,10 @@ def server(input, output, session):
     
     @render.ui
     def average_comparison():
-        nb = input.nb()
+        nb_values = resolve_filter(input.nb())
         city_avg = len(crime_df) / population_df["POPULATION"].sum() * 100
-        if nb == "All":
+        
+        if nb_values is None:
             return ui.span(ui.span(f"{city_avg:.2f}%", style="color: black"))
         
         neighbourhood_rate = int(len(filtered_data())) / filtered_population() * 100 if filtered_population() > 0 else 0
@@ -211,20 +469,21 @@ def server(input, output, session):
     
     @reactive.calc
     def data_for_time_of_day_plot():
-        nb = input.nb()
-        crime_type = input.crime_type()
-        month = input.month()
-        df = crime_df.copy()
-        if nb != "All":
-            df = df[df["NEIGHBOURHOOD"] == nb]
-        if crime_type != "All":
-            df = df[df["TYPE"] == crime_type]
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
+        df = get_filtered_data(filter_time=False)
+        # nb = input.nb()
+        # crime_type = input.crime_type()
+        # month = input.month()
+        # df = crime_df.copy()
+        # if nb != "All":
+        #     df = df[df["NEIGHBOURHOOD"] == nb]
+        # if crime_type != "All":
+        #     df = df[df["TYPE"] == crime_type]
+        # if month != "All":
+        #     df = df[df["MONTH_NAME"] == month]
         return df
         
-    
-    @render_plotly
+        
+    @render_widget
     def time_of_day_plot():
         df = data_for_time_of_day_plot()
         
@@ -248,12 +507,16 @@ def server(input, output, session):
         slices = base.mark_arc(innerRadius=30, outerRadius=60)
 
 
-        text = base.mark_text(radius=90, size=11, align='center', baseline='bottom').encode(
+        text = base.mark_text(radius=100, size=11, align='center', baseline='bottom').encode(
             text='full_label:N'
         )
         
         pie_chart = (text + slices).configure_view(
             stroke=None 
+        ).properties(
+            height="container",
+            # width=320,
+            width="container",
         )
         # pie_chart = (slices + text).properties(
         #     width=400,
@@ -266,39 +529,42 @@ def server(input, output, session):
 
     @reactive.calc
     def filtered_latlon():
-        df = filtered_data()
+        df = filtered_data().copy()
+        #df = get_filtered_data()
 
         # Validate numeric values and drop missing coordinates
-        xy = df[["X", "Y"]].copy()
-        xy["X"] = pd.to_numeric(xy["X"], errors="coerce")
-        xy["Y"] = pd.to_numeric(xy["Y"], errors="coerce")
-        xy = xy.dropna()
+        #xy = df[["X", "Y"]].copy()
+        df["X"] = pd.to_numeric(df["X"], errors="coerce")
+        df["Y"] = pd.to_numeric(df["Y"], errors="coerce")
+        df = df.dropna(subset=["X", "Y"])
 
-        if xy.empty:
+        if df.empty:
             return pd.DataFrame(columns=["lat", "lon"])
         
         # Source UTM Zone 10N WGS84 EPSG:32610 to WGS84 lat/lon EPSG:4326
         transformer = Transformer.from_crs("EPSG:32610", "EPSG:4326", always_xy=True)
 
-        lons, lats = transformer.transform(xy["X"].to_numpy(), xy["Y"].to_numpy())
-        out = pd.DataFrame({"lat": lats,
-                            "lon": lons})
+        lons, lats = transformer.transform(df["X"].to_numpy(), df["Y"].to_numpy())
+        df["lat"] = lats
+        df["lon"] = lons
+        # out = pd.DataFrame({"lat": lats,
+        #                     "lon": lons})
         
         # Metro Vancouver bounds
-        out = out[
-            out["lat"].between(49.0, 49.4) &
-            out["lon"].between(-123.3, -122.9)
-        ]
+        # df = df[
+        #     df["lat"].between(49.0, 49.4) &
+        #     df["lon"].between(-123.3, -122.9)
+        # ]
 
-        return out
+        return df
     
     @reactive.calc
     def selected_neigh_bounds():
-        nb = input.nb()
-        if nb == "All":
+        nb_values = resolve_filter(input.nb())
+        if nb_values is None:
             return None
         
-        neigh = neigh_gdf[neigh_gdf["Name"] == nb]
+        neigh = neigh_gdf[neigh_gdf["Name"].isin(nb_values)]
         if neigh.empty:
             return None
         
@@ -335,20 +601,20 @@ def server(input, output, session):
     
     @reactive.calc
     def filetered_data_no_crime_type():
-        df = crime_df.copy()
-        nb = input.nb()
-        month = input.month()
-        daily_time = input.daily_time()
+        df = get_filtered_data(filter_crime=False)
+        # df = crime_df.copy()
+        # nb = input.nb()
+        # month = input.month()
+        # daily_time = input.daily_time()
 
-        if nb != "All":
-            df = df[df["NEIGHBOURHOOD"] == nb]
+        # if nb != "All":
+        #     df = df[df["NEIGHBOURHOOD"] == nb]
 
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
+        # if month != "All":
+        #     df = df[df["MONTH_NAME"] == month]
 
-        if daily_time != "All":
-            df = df[df["TIME_OF_DAY"] == daily_time]
-        
+        # if daily_time != "All":
+        #     df = df[df["TIME_OF_DAY"] == daily_time]
         return df
 
     @reactive.calc
@@ -385,14 +651,15 @@ def server(input, output, session):
         
         chart = (
             alt.Chart(df_top)
-            .mark_bar()
+            .mark_bar(size=25)
             .encode(
                 x=alt.X("Percent Share:Q", title="Percent of Incidents"),
                 y=alt.Y(
                     "Crime Type:N",
                     sort=alt.SortField("Percent Share", order="descending"),
                     title="",
-                    axis=alt.Axis(labelLimit=100)   # Restrict long labels
+                    axis=alt.Axis(labelLimit=100),   # Restrict long labels
+                    scale=alt.Scale(paddingInner=0)
                 ),
                 color=alt.Color(
                     "Percent Share:Q",
@@ -406,7 +673,9 @@ def server(input, output, session):
                 ],
             )
             .properties(
-                # height=320,
+                height="container",
+                #width=320,
+                width="container",
                 title=alt.TitleParams(
                     text="(All filters except Crime Type)",
                     # subtitle="(All filters except Crime Type)",
@@ -421,8 +690,9 @@ def server(input, output, session):
     @render.ui
     def crime_map():
         vancity_center = [49.2827, -123.1207]
-        nb = input.nb()
+        nb_values = resolve_filter(input.nb())
         rates = neighbourhood_rates()
+        #layers = input.map_layers()
         
         # Map base
         m = folium.Map(
@@ -433,7 +703,7 @@ def server(input, output, session):
             height="100%",
         )
 
-        # Add neighbourhood polygons (default style)
+        # Add neighbourhood polygons (default-persistent style)
         folium.GeoJson(
             neigh_gdf.__geo_interface__,
             name="Neighbourhoods",
@@ -441,78 +711,109 @@ def server(input, output, session):
         ).add_to(m)
 
         # Highlight selected neighbourhood
-        if nb != "All":
-            sel_neigh = neigh_gdf[neigh_gdf["Name"] == nb]
+        if nb_values is not None:
+            sel_neigh = neigh_gdf[neigh_gdf["Name"].isin(nb_values)]
+            
+            
+            # if not sel_neigh.empty:
+            #     folium.GeoJson(
+            #         sel_neigh.__geo_interface__,
+            #         name=f"Selected: {nb}",
+            #         style_function=neigh_style_selected,
+            #     ).add_to(m)
+            
             if not sel_neigh.empty:
+                if len(nb_values) == 1:
+                    layer_name = f"Selected: {nb_values[0]}"
+                elif len(nb_values) <= 3:
+                    layer_name = f"Selected: {', '.join(nb_values)}"
+                else:
+                    layer_name = f"Selected Neighbourhoods ({len(nb_values)})"
+                    
                 folium.GeoJson(
                     sel_neigh.__geo_interface__,
-                    name=f"Selected: {nb}",
+                    name=layer_name,
                     style_function=neigh_style_selected,
                 ).add_to(m)
 
         # Add crime Heatmap and Points layers based on X/Y (lat/lon)
-        # Define toggleable layers
-       
-        # Heatmap layer (default on)
-        heat_layer = folium.FeatureGroup(name="Heatmap", show=True)
-
+        
+        # Map layers persistent state
+        # Show them if selected
         points = filtered_latlon()
-        heat_data = points[["lat", "lon"]].values.tolist()
 
-        if heat_data:
-            HeatMap(
-                heat_data,
-                # name="Crime Heatmap",
-                radius=14,
-                blur=18,
-                max_zoom=13,
-            # ).add_to(m)
-            ).add_to(heat_layer)
-        
-        heat_layer.add_to(m)
-        
-        # Points layer (optional)
-        points_layer = folium.FeatureGroup(name="Points", show=False)
+        # Heatmap layer
+        #if "heatmap" in layers:
+        if input.show_heatmap():
+            heat_layer = folium.FeatureGroup(name="Heatmap", show=True)
+            heat_data = points[["lat", "lon"]].values.tolist()
 
-        max_points = 2000
-        points_for_markers = points.head(max_points)
-
-        for lat, lon in points_for_markers[["lat", "lon"]].values:
-            folium.CircleMarker(
-                location=[lat, lon],
-                radius=3,
-                weight=1,
-                fill=True,
-                fill_opacity=0.4,
-            ).add_to(points_layer)
-        
-        points_layer.add_to(m)
+            if heat_data:
+                HeatMap(
+                    heat_data,
+                    # name="Crime Heatmap",
+                    radius=14,
+                    blur=18,
+                    max_zoom=13,
+                # ).add_to(m)
+                ).add_to(heat_layer)
+            
+            heat_layer.add_to(m)
 
         # Choropleth layer for crime rates by neighbourhood
-        
-        # Merge rates into polygons
-        gdf_rate = neigh_gdf.merge(
-            rates,
-            left_on="Name",
-            right_on="NEIGHBOURHOOD",
-            how="left"
-        )
+        #if "ratesmap" in layers:
+        if input.show_rates():
+            # Merge rates into polygons
+            gdf_rate = neigh_gdf.merge(
+                rates,
+                left_on="Name",
+                right_on="NEIGHBOURHOOD",
+                how="left"
+            )
 
-        gdf_rate["incident_count"] = gdf_rate["incident_count"].fillna(0)
-        gdf_rate["rate_per_1000"] = gdf_rate["rate_per_1000"].fillna(0)
+            gdf_rate["incident_count"] = gdf_rate["incident_count"].fillna(0)
+            gdf_rate["rate_per_1000"] = gdf_rate["rate_per_1000"].fillna(0)
 
-        folium.Choropleth(
-            geo_data=gdf_rate.__geo_interface__,
-            data=gdf_rate[["Name", "rate_per_1000"]],
-            columns=["Name", "rate_per_1000"],
-            key_on="feature.properties.Name",
-            name="Rate per 1,000 residents",
-            fill_color="YlOrRd",
-            fill_opacity=0.6,
-            line_opacity=0.3,
-            legend_name="Incidents per 1,000 residents",
-            show=False
-        ).add_to(m)
+            folium.Choropleth(
+                geo_data=gdf_rate.__geo_interface__,
+                data=gdf_rate[["Name", "rate_per_1000"]],
+                columns=["Name", "rate_per_1000"],
+                key_on="feature.properties.Name",
+                name="Rate per 1,000 residents",
+                fill_color="YlOrRd",
+                fill_opacity=0.6,
+                line_opacity=0.3,
+                legend_name="Incidents per 1,000 residents",
+                show=True  #False
+            ).add_to(m)
+
+        # Points layer
+        #if "pointsmap" in layers:
+        if input.show_points():
+            points_layer = folium.FeatureGroup(name="Points", show=True)
+            max_points = 2000
+            points_for_markers = points.head(max_points)
+
+            #for lat, lon in points_for_markers[["lat", "lon"]].values:
+            for _, row in points_for_markers.iterrows():
+                # Tooltip content
+                tooltip_text = (
+                    f"<b>{row['TYPE']}</b><br>"
+                    f"{row['HUNDRED_BLOCK']}<br>"
+                    f"{row['NEIGHBOURHOOD']}<br>"
+                    f"{row['MONTH_NAME']} {row['DAY']} at {row['HOUR']:02}:{row['MINUTE']:02}"
+                )
+                
+                folium.CircleMarker(
+                    location=[row["lat"], row["lon"]],
+                    radius=3,
+                    weight=1,
+                    fill=True,
+                    fill_opacity=0.4,
+                    tooltip=tooltip_text
+                ).add_to(points_layer)
+            
+            points_layer.add_to(m)
 
         # Zoom map to selected neighbourhood
         bounds = selected_neigh_bounds()
@@ -561,6 +862,58 @@ def server(input, output, session):
         m.get_root().html.add_child(folium.Element(toggle_legend_js))
 
         return ui.HTML(m._repr_html_())
+    
+    qc_vals = qc.server()
 
+    @reactive.calc
+    def query_df():
+        return qc_vals.df()
+
+    @render.text
+    def title():
+        return qc_vals.title() or "Vancouver Neighbourhood Crimes"
+
+    @render.data_frame
+    def data_table():
+        return query_df()
+    
+    @render.download(filename="vancouver_neighbourhood_crimes.csv")
+    def download_filtered():
+        df = query_df()
+        yield df.to_csv(index=False)
+
+    @render.text
+    def chat_crime_count():
+        df = query_df()
+        if df.empty:
+            return "N/A"
+        return str(len(df))
+    
+    @render.text
+    def chat_top_neighbourhood():
+        df = query_df()
+        if df.empty:
+            return "N/A"
+        top = (
+            df.groupby("NEIGHBOURHOOD")
+            .size()
+            .sort_values(ascending=False)
+            .index[0]
+        )
+        return str(top)
+    
+    @render.text
+    def chat_top_crime():
+        df = query_df()
+        if df.empty:
+            return "N/A"
+        top = (
+            df.groupby("TYPE")
+            .size()
+            .sort_values(ascending=False)
+            .index[0]
+        )
+        return str(top)
+    
 
 app = App(app_ui, server=server)

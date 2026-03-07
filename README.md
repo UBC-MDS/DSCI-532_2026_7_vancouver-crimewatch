@@ -9,7 +9,7 @@ Both the *development* and the *stable* versions of this dashboard can be access
 [Development version](https://019c928e-e698-6cad-eba8-b45208bebd6f.share.connect.posit.cloud/)
 
 ## Demo
-![gif](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/blob/chore/demo-gif/img/vancouver-neighbourhood-safety.gif)
+![gif](./img/vancouver-neighbourhood-safety.gif)
 
 ## User Guide
 
@@ -25,6 +25,8 @@ In the main panel, the dashboard displays multiple KPI metrics for crime numbers
   - Heat map of the rate per 1000 Residents
 - Bar chart of the top 5 crime yypes by % share
 - Donut chart of crime by time of day
+
+To run the chatbot locally, you will need to add your Anthropic API key in the .env file in the repo root with `ANTHROPIC_API_KEY=`
 
 These views are designed to help users quickly explore where incidents are happening, which crime types are most common, and when incidents tend to occur.
 

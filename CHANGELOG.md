@@ -1,3 +1,36 @@
+
+
+## [0.3.0]
+
+### Added
+- Enabled the map to keep a persistent state of the selected visual layers across changes in the filters. [#97](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/97)
+- Implemented hover-over tooltips to the points in the map Points layer. Displaying further details about the incident. [99](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/99)
+- Added three querychat reactive UI Cards ("Reported Incidents" and "Crime Rate") in the LLM Chat tab.[#100](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/100)
+- Included default context for filtering, to provide context and opinion directions for prospective users of the vancouver neighborhood safety dashboard. [#104](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/104)
+- Added new tab in the dashboard with QueryChat interface [#77](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/issues/77)
+- Implemented QueryChat interface and default prompts [#88](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/issues/88)
+- Implemented dataframe output to show filtered QueryChat dataframe [#89](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/issues/89)
+- Implemented dataframe download button to download filtered QueryChat dataframe as csv file [#90](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/issues/90)
+
+
+
+### Changed
+- Adjusted the layout of the Map and the two graphics to use a "div" section. [#97](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/97)
+- Adjusted the title bar to include a more comprehensive summary of the primary purpose of the dashboard. [#98](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/98)
+- Optimized all code blocks associated with filtering data, Modified the filter pane to include a multi-select option alongside a clear all filters button. [101](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/101)
+- Customized the Dashboard icons and KPIS to fit the a one-screen frame. [107](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/107)
+
+
+### Known Issues
+- Altair has some formatting constraints with a donut chart because the labels keep mixing with the chart even when the plot size is modifies, for the time of day plot, we would recommend changing or updating this workflow in the next milestone.
+
+### Reflection
+- Using card with shiny is absolutely tricky, because when we make changes to a plot, it extends and leaves extra un-used spaces at the bottom. A remedy for the next milestone would involve researching on other methods to optimize this.
+
+
+<br>
+
+
 ## [0.2.0]
 
 ### Added
@@ -16,9 +49,15 @@
 - Implemented functionality for KPI metrics for crime count, crime rate, crime rate, average crime rate comparison and neighbourhood safety ranking. [#59](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/59)
 - Implemented reactive calculation functionality to filter the data based on the user's selection in the dashboard. [#53](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/53)
 - Included the Demo-GIF for the Vancouver Neighbourhood Safety App to provide clarity to users on APP functionality.[#72](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/72)
+- Enabled the map to keep a persistent state of the selected visual layers across changes in the filters. [#97](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/97)
+- Implemented hover-over tooltips to the points in the map Points layer. Displaying further details about the incident. [99](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/99)
+- Added three querychat reactive UI Cards ("Reported Incidents" and "Crime Rate") in the LLM Chat tab.[#100](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/100)
 
 ### Changed
 - Updated the UI and Visual perception of the Dashboard App to follow design principles [#70](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/70)
+- Adjusted the layout of the Map and the two graphics to use a "div" section. [#97](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/97)
+
+- Adjusted the title bar to include a more comprehensive summary of the primary purpose of the dashboard. [#98](https://github.com/UBC-MDS/DSCI-532_2026_7_vancouver-neighbourhood-safety/pull/98)
 
 
 ### Known Issues
@@ -26,3 +65,5 @@
 
 ### Reflection
 - We had a full connection across our input and outputs, so creating a sub frame (PLOTS and KPIs) in our reactivity diagram provided clarity and refinement to our diagram.
+
+
