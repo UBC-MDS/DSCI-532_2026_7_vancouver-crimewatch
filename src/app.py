@@ -268,7 +268,7 @@ app_ui = ui.page_navbar(
                         """
                     ),
                     ui.card(
-                        ui.card_header(ui.strong("Crime Occurrences Across Vancouver's Neigbourhoods")),
+                        ui.card_header(ui.strong("Crime Occurrences Across Neigbourhoods")),
                         ui.output_ui("crime_map"),
                         #style="height: 100%; width: 100%;",
                         full_screen=True,
