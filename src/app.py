@@ -353,21 +353,40 @@ def server(input, output, session):
         #     pop = population_df[population_df["NEIGHBOURHOOD"] == nb]["POPULATION"]
         #     return pop.iloc[0] if not pop.empty else 0
         
+    # @reactive.calc
+    # def neighbourhood_ranking():
+    #     nb = input.nb()
+    #     crime_type = input.crime_type()
+    #     month = input.month()
+    #     daily_time = input.daily_time()
+    #     if nb == "All":
+    #         return None
+    #     df = crime_df.copy()
+    #     if crime_type != "All":
+    #         df = df[df["TYPE"] == crime_type]
+    #     if month != "All":
+    #         df = df[df["MONTH_NAME"] == month]
+    #     if daily_time != "All":
+    #         df = df[df["TIME_OF_DAY"] == daily_time]
+    #     crime_counts = df.groupby("NEIGHBOURHOOD").size()
+    #     rates = crime_counts / population_df.set_index("NEIGHBOURHOOD")["POPULATION"] * 100
+    #     ranked = rates.sort_values(ascending=True).reset_index()
+    #     if nb in ranked["NEIGHBOURHOOD"].values:
+    #         rank = ranked[ranked["NEIGHBOURHOOD"] == nb].index[0] + 1
+    #         total = len(ranked)
+    #         return f"{rank} / {total}"
+    #     return None
+    
     @reactive.calc
     def neighbourhood_ranking():
-        nb = input.nb()
-        crime_type = input.crime_type()
-        month = input.month()
-        daily_time = input.daily_time()
-        if nb == "All":
+        nb_values = resolve_filter(input.nb())
+        
+        if nb_values is None:
             return None
-        df = crime_df.copy()
-        if crime_type != "All":
-            df = df[df["TYPE"] == crime_type]
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
-        if daily_time != "All":
-            df = df[df["TIME_OF_DAY"] == daily_time]
+            
+        df = get_filtered_data(filter_nb=False)
+        nb = nb_values[0]
+        
         crime_counts = df.groupby("NEIGHBOURHOOD").size()
         rates = crime_counts / population_df.set_index("NEIGHBOURHOOD")["POPULATION"] * 100
         ranked = rates.sort_values(ascending=True).reset_index()
@@ -376,6 +395,7 @@ def server(input, output, session):
             total = len(ranked)
             return f"{rank} / {total}"
         return None
+    
     
     @render.text
     def crime_count():
