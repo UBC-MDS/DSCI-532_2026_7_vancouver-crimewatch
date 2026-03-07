@@ -293,6 +293,8 @@ def server(input, output, session):
         return values
     
     def get_filtered_data(filter_nb=True, filter_crime=True, filter_month=True, filter_time=True):
+        """Helper function to apply selected filters to the vancouver neighbourhood data 
+        based on which filters are enabled"""
         df = crime_df.copy()
         
         if filter_nb:
@@ -317,33 +319,39 @@ def server(input, output, session):
                 
         return df
     
-
     
     @reactive.calc
     def filtered_data():
-        nb = input.nb()
-        crime_type = input.crime_type()
-        month = input.month()
-        daily_time = input.daily_time()
-        df = crime_df.copy()
-        if nb != "All":
-            df = df[df["NEIGHBOURHOOD"] == nb]
-        if crime_type != "All":
-            df = df[df["TYPE"] == crime_type]
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
-        if daily_time != "All":
-            df = df[df["TIME_OF_DAY"] == daily_time]
-        return df
+        return get_filtered_data()
+        # nb = input.nb()
+        # crime_type = input.crime_type()
+        # month = input.month()
+        # daily_time = input.daily_time()
+        # df = crime_df.copy()
+        # if nb != "All":
+        #     df = df[df["NEIGHBOURHOOD"] == nb]
+        # if crime_type != "All":
+        #     df = df[df["TYPE"] == crime_type]
+        # if month != "All":
+        #     df = df[df["MONTH_NAME"] == month]
+        # if daily_time != "All":
+        #     df = df[df["TIME_OF_DAY"] == daily_time]
+        # return df
     
     @reactive.calc
     def filtered_population():
-        nb = input.nb()
-        if nb == "All":
+        nb_values = resolve_filter(input.nb())
+        if nb_values is None:
             return population_df["POPULATION"].sum()
         else:
-            pop = population_df[population_df["NEIGHBOURHOOD"] == nb]["POPULATION"]
-            return pop.iloc[0] if not pop.empty else 0
+            pop = population_df[population_df["NEIGHBOURHOOD"].isin(nb_values)]["POPULATION"]
+            return pop.sum() if not pop.empty else 0
+        # nb = input.nb()
+        # if nb == "All":
+        #     return population_df["POPULATION"].sum()
+        # else:
+        #     pop = population_df[population_df["NEIGHBOURHOOD"] == nb]["POPULATION"]
+        #     return pop.iloc[0] if not pop.empty else 0
         
     @reactive.calc
     def neighbourhood_ranking():
