@@ -176,16 +176,16 @@ app_ui = ui.page_navbar(
         header,
         ui.layout_sidebar(
             ui.sidebar(
-                ui.input_select("nb", "Neighbourhood",
+                ui.input_selectize("nb", "Neighbourhood",
                     choices=neighbourhoods,
                     multiple=True),
-                ui.input_select("crime_type", "Crime Type",
+                ui.input_selectize("crime_type", "Crime Type",
                     choices=crime_types,
                     multiple=True),
-                ui.input_select("month", "Month",
+                ui.input_selectize("month", "Month",
                     choices=months, 
                     multiple=True),
-                ui.input_select("daily_time", "Time of Day",
+                ui.input_selectize("daily_time", "Time of Day",
                     choices=time_of_day,
                     multiple=True),
                 # ui.input_checkbox_group(
@@ -443,8 +443,8 @@ def server(input, output, session):
         #     df = df[df["MONTH_NAME"] == month]
         return df
         
-    
-    @render_plotly
+        
+    @render_widget
     def time_of_day_plot():
         df = data_for_time_of_day_plot()
         
@@ -465,10 +465,10 @@ def server(input, output, session):
             tooltip=[alt.Tooltip('TIME_OF_DAY:N', title='Time of Day'), alt.Tooltip('percent:Q', format='.1%', title='Percentage'), alt.Tooltip('count:Q', format=',', title='Count')]
         )
 
-        slices = base.mark_arc(innerRadius=30, outerRadius=60)
+        slices = base.mark_arc(innerRadius=40, outerRadius=70)
 
 
-        text = base.mark_text(radius=90, size=11, align='center', baseline='bottom').encode(
+        text = base.mark_text(radius=100, size=11, align='center', baseline='bottom').encode(
             text='full_label:N'
         )
         
