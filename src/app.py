@@ -430,16 +430,17 @@ def server(input, output, session):
     
     @reactive.calc
     def data_for_time_of_day_plot():
-        nb = input.nb()
-        crime_type = input.crime_type()
-        month = input.month()
-        df = crime_df.copy()
-        if nb != "All":
-            df = df[df["NEIGHBOURHOOD"] == nb]
-        if crime_type != "All":
-            df = df[df["TYPE"] == crime_type]
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
+        df = get_filtered_data(filter_time=False)
+        # nb = input.nb()
+        # crime_type = input.crime_type()
+        # month = input.month()
+        # df = crime_df.copy()
+        # if nb != "All":
+        #     df = df[df["NEIGHBOURHOOD"] == nb]
+        # if crime_type != "All":
+        #     df = df[df["TYPE"] == crime_type]
+        # if month != "All":
+        #     df = df[df["MONTH_NAME"] == month]
         return df
         
     
@@ -486,6 +487,7 @@ def server(input, output, session):
     @reactive.calc
     def filtered_latlon():
         df = filtered_data().copy()
+        #df = get_filtered_data()
 
         # Validate numeric values and drop missing coordinates
         #xy = df[["X", "Y"]].copy()
@@ -515,11 +517,11 @@ def server(input, output, session):
     
     @reactive.calc
     def selected_neigh_bounds():
-        nb = input.nb()
-        if nb == "All":
+        nb_values = resolve_filter(input.nb())
+        if nb_values is None:
             return None
         
-        neigh = neigh_gdf[neigh_gdf["Name"] == nb]
+        neigh = neigh_gdf[neigh_gdf["Name"].isin(nb_values)]
         if neigh.empty:
             return None
         
@@ -556,20 +558,20 @@ def server(input, output, session):
     
     @reactive.calc
     def filetered_data_no_crime_type():
-        df = crime_df.copy()
-        nb = input.nb()
-        month = input.month()
-        daily_time = input.daily_time()
+        df = get_filtered_data(filter_crime=False)
+        # df = crime_df.copy()
+        # nb = input.nb()
+        # month = input.month()
+        # daily_time = input.daily_time()
 
-        if nb != "All":
-            df = df[df["NEIGHBOURHOOD"] == nb]
+        # if nb != "All":
+        #     df = df[df["NEIGHBOURHOOD"] == nb]
 
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
+        # if month != "All":
+        #     df = df[df["MONTH_NAME"] == month]
 
-        if daily_time != "All":
-            df = df[df["TIME_OF_DAY"] == daily_time]
-        
+        # if daily_time != "All":
+        #     df = df[df["TIME_OF_DAY"] == daily_time]
         return df
 
     @reactive.calc
@@ -642,7 +644,7 @@ def server(input, output, session):
     @render.ui
     def crime_map():
         vancity_center = [49.2827, -123.1207]
-        nb = input.nb()
+        nb_values = resolve_filter(input.nb())
         rates = neighbourhood_rates()
         #layers = input.map_layers()
         
@@ -663,8 +665,8 @@ def server(input, output, session):
         ).add_to(m)
 
         # Highlight selected neighbourhood
-        if nb != "All":
-            sel_neigh = neigh_gdf[neigh_gdf["Name"] == nb]
+        if nb_values is not None:
+            sel_neigh = neigh_gdf[neigh_gdf["Name"].isin(nb_values)]
             if not sel_neigh.empty:
                 folium.GeoJson(
                     sel_neigh.__geo_interface__,
