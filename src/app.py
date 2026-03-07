@@ -176,14 +176,18 @@ app_ui = ui.page_navbar(
         header,
         ui.layout_sidebar(
             ui.sidebar(
-                ui.input_select("nb", "Neighbourhood",
-                    neighbourhoods),
-                ui.input_select("crime_type", "Crime Type",
-                    crime_types),
-                ui.input_select("month", "Month",
-                    months),
-                ui.input_select("daily_time", "Time of Day",
-                    time_of_day),
+                ui.input_selectize("nb", "Neighbourhood",
+                    choices=neighbourhoods,
+                    multiple=True),
+                ui.input_selectize("crime_type", "Crime Type",
+                    choices=crime_types,
+                    multiple=True),
+                ui.input_selectize("month", "Month",
+                    choices=months, 
+                    multiple=True),
+                ui.input_selectize("daily_time", "Time of Day",
+                    choices=time_of_day,
+                    multiple=True),
                 # ui.input_checkbox_group(
                 #     "map_layers",
                 #     "Map Layers",
@@ -281,47 +285,108 @@ app_ui = ui.page_navbar(
 )
 
 def server(input, output, session):
+    
+    def resolve_filter(values):
+        "Helper function to convert 'All' selections to None for easier filtering logic"
+        if not values or "All" in values:
+            return None
+        return values
+    
+    def get_filtered_data(filter_nb=True, filter_crime=True, filter_month=True, filter_time=True):
+        """Helper function to apply selected filters to the vancouver neighbourhood data 
+        based on which filters are enabled"""
+        df = crime_df.copy()
+        
+        if filter_nb:
+            nb_val = resolve_filter(input.nb())
+            if nb_val is not None:         
+                df = df[df["NEIGHBOURHOOD"].isin(nb_val)]
+                
+        if filter_crime:
+            crime_val = resolve_filter(input.crime_type())
+            if crime_val is not None: 
+                df = df[df["TYPE"].isin(crime_val)]
+                
+        if filter_month:
+            month_val = resolve_filter(input.month())
+            if month_val is not None:      
+                df = df[df["MONTH_NAME"].isin(month_val)]
+                
+        if filter_time:
+            time_val = resolve_filter(input.daily_time())
+            if time_val is not None: 
+                df = df[df["TIME_OF_DAY"].isin(time_val)]
+                
+        return df
+    
+    
     @reactive.calc
     def filtered_data():
-        nb = input.nb()
-        crime_type = input.crime_type()
-        month = input.month()
-        daily_time = input.daily_time()
-        df = crime_df.copy()
-        if nb != "All":
-            df = df[df["NEIGHBOURHOOD"] == nb]
-        if crime_type != "All":
-            df = df[df["TYPE"] == crime_type]
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
-        if daily_time != "All":
-            df = df[df["TIME_OF_DAY"] == daily_time]
-        return df
+        return get_filtered_data()
+        # nb = input.nb()
+        # crime_type = input.crime_type()
+        # month = input.month()
+        # daily_time = input.daily_time()
+        # df = crime_df.copy()
+        # if nb != "All":
+        #     df = df[df["NEIGHBOURHOOD"] == nb]
+        # if crime_type != "All":
+        #     df = df[df["TYPE"] == crime_type]
+        # if month != "All":
+        #     df = df[df["MONTH_NAME"] == month]
+        # if daily_time != "All":
+        #     df = df[df["TIME_OF_DAY"] == daily_time]
+        # return df
     
     @reactive.calc
     def filtered_population():
-        nb = input.nb()
-        if nb == "All":
+        nb_values = resolve_filter(input.nb())
+        if nb_values is None:
             return population_df["POPULATION"].sum()
         else:
-            pop = population_df[population_df["NEIGHBOURHOOD"] == nb]["POPULATION"]
-            return pop.iloc[0] if not pop.empty else 0
+            pop = population_df[population_df["NEIGHBOURHOOD"].isin(nb_values)]["POPULATION"]
+            return pop.sum() if not pop.empty else 0
+        # nb = input.nb()
+        # if nb == "All":
+        #     return population_df["POPULATION"].sum()
+        # else:
+        #     pop = population_df[population_df["NEIGHBOURHOOD"] == nb]["POPULATION"]
+        #     return pop.iloc[0] if not pop.empty else 0
         
+    # @reactive.calc
+    # def neighbourhood_ranking():
+    #     nb = input.nb()
+    #     crime_type = input.crime_type()
+    #     month = input.month()
+    #     daily_time = input.daily_time()
+    #     if nb == "All":
+    #         return None
+    #     df = crime_df.copy()
+    #     if crime_type != "All":
+    #         df = df[df["TYPE"] == crime_type]
+    #     if month != "All":
+    #         df = df[df["MONTH_NAME"] == month]
+    #     if daily_time != "All":
+    #         df = df[df["TIME_OF_DAY"] == daily_time]
+    #     crime_counts = df.groupby("NEIGHBOURHOOD").size()
+    #     rates = crime_counts / population_df.set_index("NEIGHBOURHOOD")["POPULATION"] * 100
+    #     ranked = rates.sort_values(ascending=True).reset_index()
+    #     if nb in ranked["NEIGHBOURHOOD"].values:
+    #         rank = ranked[ranked["NEIGHBOURHOOD"] == nb].index[0] + 1
+    #         total = len(ranked)
+    #         return f"{rank} / {total}"
+    #     return None
+    
     @reactive.calc
     def neighbourhood_ranking():
-        nb = input.nb()
-        crime_type = input.crime_type()
-        month = input.month()
-        daily_time = input.daily_time()
-        if nb == "All":
+        nb_values = resolve_filter(input.nb())
+        
+        if nb_values is None:
             return None
-        df = crime_df.copy()
-        if crime_type != "All":
-            df = df[df["TYPE"] == crime_type]
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
-        if daily_time != "All":
-            df = df[df["TIME_OF_DAY"] == daily_time]
+            
+        df = get_filtered_data(filter_nb=False)
+        nb = nb_values[0]
+        
         crime_counts = df.groupby("NEIGHBOURHOOD").size()
         rates = crime_counts / population_df.set_index("NEIGHBOURHOOD")["POPULATION"] * 100
         ranked = rates.sort_values(ascending=True).reset_index()
@@ -330,6 +395,7 @@ def server(input, output, session):
             total = len(ranked)
             return f"{rank} / {total}"
         return None
+    
     
     @render.text
     def crime_count():
@@ -346,9 +412,10 @@ def server(input, output, session):
     
     @render.ui
     def average_comparison():
-        nb = input.nb()
+        nb_values = resolve_filter(input.nb())
         city_avg = len(crime_df) / population_df["POPULATION"].sum() * 100
-        if nb == "All":
+        
+        if nb_values is None:
             return ui.span(ui.span(f"{city_avg:.2f}%", style="color: black"))
         
         neighbourhood_rate = int(len(filtered_data())) / filtered_population() * 100 if filtered_population() > 0 else 0
@@ -363,20 +430,21 @@ def server(input, output, session):
     
     @reactive.calc
     def data_for_time_of_day_plot():
-        nb = input.nb()
-        crime_type = input.crime_type()
-        month = input.month()
-        df = crime_df.copy()
-        if nb != "All":
-            df = df[df["NEIGHBOURHOOD"] == nb]
-        if crime_type != "All":
-            df = df[df["TYPE"] == crime_type]
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
+        df = get_filtered_data(filter_time=False)
+        # nb = input.nb()
+        # crime_type = input.crime_type()
+        # month = input.month()
+        # df = crime_df.copy()
+        # if nb != "All":
+        #     df = df[df["NEIGHBOURHOOD"] == nb]
+        # if crime_type != "All":
+        #     df = df[df["TYPE"] == crime_type]
+        # if month != "All":
+        #     df = df[df["MONTH_NAME"] == month]
         return df
         
-    
-    @render_plotly
+        
+    @render_widget
     def time_of_day_plot():
         df = data_for_time_of_day_plot()
         
@@ -397,10 +465,10 @@ def server(input, output, session):
             tooltip=[alt.Tooltip('TIME_OF_DAY:N', title='Time of Day'), alt.Tooltip('percent:Q', format='.1%', title='Percentage'), alt.Tooltip('count:Q', format=',', title='Count')]
         )
 
-        slices = base.mark_arc(innerRadius=30, outerRadius=60)
+        slices = base.mark_arc(innerRadius=40, outerRadius=70)
 
 
-        text = base.mark_text(radius=90, size=11, align='center', baseline='bottom').encode(
+        text = base.mark_text(radius=100, size=11, align='center', baseline='bottom').encode(
             text='full_label:N'
         )
         
@@ -419,6 +487,7 @@ def server(input, output, session):
     @reactive.calc
     def filtered_latlon():
         df = filtered_data().copy()
+        #df = get_filtered_data()
 
         # Validate numeric values and drop missing coordinates
         #xy = df[["X", "Y"]].copy()
@@ -448,11 +517,11 @@ def server(input, output, session):
     
     @reactive.calc
     def selected_neigh_bounds():
-        nb = input.nb()
-        if nb == "All":
+        nb_values = resolve_filter(input.nb())
+        if nb_values is None:
             return None
         
-        neigh = neigh_gdf[neigh_gdf["Name"] == nb]
+        neigh = neigh_gdf[neigh_gdf["Name"].isin(nb_values)]
         if neigh.empty:
             return None
         
@@ -489,20 +558,20 @@ def server(input, output, session):
     
     @reactive.calc
     def filetered_data_no_crime_type():
-        df = crime_df.copy()
-        nb = input.nb()
-        month = input.month()
-        daily_time = input.daily_time()
+        df = get_filtered_data(filter_crime=False)
+        # df = crime_df.copy()
+        # nb = input.nb()
+        # month = input.month()
+        # daily_time = input.daily_time()
 
-        if nb != "All":
-            df = df[df["NEIGHBOURHOOD"] == nb]
+        # if nb != "All":
+        #     df = df[df["NEIGHBOURHOOD"] == nb]
 
-        if month != "All":
-            df = df[df["MONTH_NAME"] == month]
+        # if month != "All":
+        #     df = df[df["MONTH_NAME"] == month]
 
-        if daily_time != "All":
-            df = df[df["TIME_OF_DAY"] == daily_time]
-        
+        # if daily_time != "All":
+        #     df = df[df["TIME_OF_DAY"] == daily_time]
         return df
 
     @reactive.calc
@@ -575,7 +644,7 @@ def server(input, output, session):
     @render.ui
     def crime_map():
         vancity_center = [49.2827, -123.1207]
-        nb = input.nb()
+        nb_values = resolve_filter(input.nb())
         rates = neighbourhood_rates()
         #layers = input.map_layers()
         
@@ -596,12 +665,28 @@ def server(input, output, session):
         ).add_to(m)
 
         # Highlight selected neighbourhood
-        if nb != "All":
-            sel_neigh = neigh_gdf[neigh_gdf["Name"] == nb]
+        if nb_values is not None:
+            sel_neigh = neigh_gdf[neigh_gdf["Name"].isin(nb_values)]
+            
+            
+            # if not sel_neigh.empty:
+            #     folium.GeoJson(
+            #         sel_neigh.__geo_interface__,
+            #         name=f"Selected: {nb}",
+            #         style_function=neigh_style_selected,
+            #     ).add_to(m)
+            
             if not sel_neigh.empty:
+                if len(nb_values) == 1:
+                    layer_name = f"Selected: {nb_values[0]}"
+                elif len(nb_values) <= 3:
+                    layer_name = f"Selected: {', '.join(nb_values)}"
+                else:
+                    layer_name = f"Selected Neighbourhoods ({len(nb_values)})"
+                    
                 folium.GeoJson(
                     sel_neigh.__geo_interface__,
-                    name=f"Selected: {nb}",
+                    name=layer_name,
                     style_function=neigh_style_selected,
                 ).add_to(m)
 
