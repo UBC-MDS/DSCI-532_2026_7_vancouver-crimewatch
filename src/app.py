@@ -713,7 +713,34 @@ def server(input, output, session):
                 ).add_to(heat_layer)
             
             heat_layer.add_to(m)
-        
+
+        # Choropleth layer for crime rates by neighbourhood
+        #if "ratesmap" in layers:
+        if input.show_rates():
+            # Merge rates into polygons
+            gdf_rate = neigh_gdf.merge(
+                rates,
+                left_on="Name",
+                right_on="NEIGHBOURHOOD",
+                how="left"
+            )
+
+            gdf_rate["incident_count"] = gdf_rate["incident_count"].fillna(0)
+            gdf_rate["rate_per_1000"] = gdf_rate["rate_per_1000"].fillna(0)
+
+            folium.Choropleth(
+                geo_data=gdf_rate.__geo_interface__,
+                data=gdf_rate[["Name", "rate_per_1000"]],
+                columns=["Name", "rate_per_1000"],
+                key_on="feature.properties.Name",
+                name="Rate per 1,000 residents",
+                fill_color="YlOrRd",
+                fill_opacity=0.6,
+                line_opacity=0.3,
+                legend_name="Incidents per 1,000 residents",
+                show=True  #False
+            ).add_to(m)
+
         # Points layer
         #if "pointsmap" in layers:
         if input.show_points():
@@ -741,33 +768,6 @@ def server(input, output, session):
                 ).add_to(points_layer)
             
             points_layer.add_to(m)
-
-        # Choropleth layer for crime rates by neighbourhood
-        #if "ratesmap" in layers:
-        if input.show_rates():
-            # Merge rates into polygons
-            gdf_rate = neigh_gdf.merge(
-                rates,
-                left_on="Name",
-                right_on="NEIGHBOURHOOD",
-                how="left"
-            )
-
-            gdf_rate["incident_count"] = gdf_rate["incident_count"].fillna(0)
-            gdf_rate["rate_per_1000"] = gdf_rate["rate_per_1000"].fillna(0)
-
-            folium.Choropleth(
-                geo_data=gdf_rate.__geo_interface__,
-                data=gdf_rate[["Name", "rate_per_1000"]],
-                columns=["Name", "rate_per_1000"],
-                key_on="feature.properties.Name",
-                name="Rate per 1,000 residents",
-                fill_color="YlOrRd",
-                fill_opacity=0.6,
-                line_opacity=0.3,
-                legend_name="Incidents per 1,000 residents",
-                show=True #False
-            ).add_to(m)
 
         # Zoom map to selected neighbourhood
         bounds = selected_neigh_bounds()
